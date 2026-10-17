@@ -23,24 +23,24 @@ var is_low := false
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 194, "time": 120.0, "sections": [
+	{"ammo": 194, "time": 162.0, "sections": [
 		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
-	{"ammo": 200, "time": 120.0, "sections": [
+	{"ammo": 200, "time": 162.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
 		{"hp": 340, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
-	{"ammo": 186, "time": 120.0, "sections": [
+	{"ammo": 186, "time": 162.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 450, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
-	{"ammo": 110, "time": 130.0, "sections": [
+	{"ammo": 110, "time": 176.0, "sections": [
 		{"hp": 260, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "okcu", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
 		{"hp": 450, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.6], [-27.0, -2.2, 4.0, "dev", 0.0], [-27.0, 2.2, 4.0, "x2", 0.0]]},
 		{"hp": 800, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x2", 0.0], [-18.0, 0.0, 3.2, "x3", 2.4], [-27.0, -2.8, 2.8, "okcu", 0.0], [-27.0, 0.0, 2.8, "dev", 0.0], [-27.0, 2.8, 2.8, "-5", 0.0]]}]},
-	{"ammo": 120, "time": 140.0, "sections": [
+	{"ammo": 120, "time": 189.0, "sections": [
 		{"hp": 300, "spawn": 1.2, "brute": 0.15, "gates": [[-8.0, -2.8, 2.8, "x2", 0.0], [-8.0, 0.0, 2.8, "-5", 0.0], [-8.0, 2.8, 2.8, "x3", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.4], [-27.0, 0.0, 3.0, "dev", 2.0]]},
 		{"hp": 550, "spawn": 0.9, "brute": 0.22, "gates": [[-8.0, 0.0, 3.0, "x3", 2.6], [-17.0, -2.2, 4.0, "okcu", 0.0], [-17.0, 2.2, 4.0, "-5", 0.0], [-26.0, -2.2, 4.0, "x2", 0.0], [-26.0, 2.2, 4.0, "kalkan", 0.0]]},
 		{"hp": 950, "spawn": 0.75, "brute": 0.3, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "+10", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "okcu", 1.0], [-26.0, 2.8, 2.8, "-5", 0.0]]}]},
-	{"ammo": 130, "time": 150.0, "sections": [
+	{"ammo": 130, "time": 203.0, "sections": [
 		{"hp": 350, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, 0.0, 3.0, "-5", 2.8], [-14.0, -2.2, 4.0, "x3", 0.0], [-14.0, 2.2, 4.0, "kalkan", 0.0], [-24.0, 0.0, 3.0, "dev", 2.2]]},
 		{"hp": 650, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "okcu", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "-5", 0.0], [-26.0, 0.0, 2.8, "kalkan", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]},
 		{"hp": 1200, "spawn": 0.65, "brute": 0.32, "gates": [[-8.0, 0.0, 3.0, "x2", 2.6], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 4.0, "-5", 0.0], [-25.0, -2.2, 4.0, "dev", 0.0], [-25.0, 2.2, 4.0, "okcu", 0.0]]}]},
@@ -144,6 +144,7 @@ var banner: Label = null
 var ammo_warn: Label = null
 var hud_crow: Control = null
 var ptr_down := false
+var ptr_pos := Vector2.ZERO   # basili parmak/fare konumu (bas-tut ile nisan)
 var g_down := false        # isaretci (fare/dokunma) su an basili mi
 var in_gate := false
 var res_ready := false     # sonuc butonlari tiklanabilir mi (kilit acildi mi)
@@ -592,18 +593,52 @@ func _ready() -> void:
 		_fade(func() -> void: start_level(0))
 		await get_tree().create_timer(0.8).timeout
 		ammo = 60; time_left = 70.0
-		_win()
-		await get_tree().create_timer(1.1).timeout
 		var lv0 := level
-		_tap(btn_next, true)                # kilitliyken bas
+		_tap(btn_next, true)                # v8.7: oyunda bas (zaferden once), ekran acilinca birak -> yok sayilmali
+		await get_tree().create_timer(0.2).timeout
+		_win()
 		await get_tree().create_timer(1.2).timeout
-		_tap(btn_next, false)               # kilit acildiktan sonra birak
+		_tap(btn_next, false)
 		await get_tree().create_timer(0.5).timeout
 		var stale_ignored := result.visible
 		_tap(btn_next, true); await get_tree().process_frame; _tap(btn_next, false)
 		await get_tree().create_timer(0.8).timeout
 		var fresh_ok := not result.visible
 		print("INPUTCHECK held_no_action=%s release_on_menu_goes_menu=%s first_oyna_opens_map=%s win_stale_press_ignored=%s win_fresh_press_works=%s lv=%d" % [on_menu, still_menu, map_ok, stale_ignored, fresh_ok, lv0])
+		get_tree().quit()
+	elif args.size() > 0 and args[0] == "holdsteer":
+		# bas-tut ile nisan: isaretci hareket etmeden top isaretcinin x'ine gider (fare ve dokunma)
+		hint_seen = true
+		start_level(0)
+		await get_tree().create_timer(0.6).timeout
+		var vs := get_viewport().get_visible_rect().size
+		var ft := get_viewport().get_final_transform()
+		var outs: Array = []
+		for kind in ["mouse", "touch"]:
+			for side in [0.12, 0.88, 0.5]:
+				var sp := ft * Vector2(vs.x * side, vs.y * 0.8)
+				var ev: InputEvent
+				if kind == "mouse":
+					var mb := InputEventMouseButton.new(); mb.button_index = MOUSE_BUTTON_LEFT; mb.pressed = true
+					mb.button_mask = MOUSE_BUTTON_MASK_LEFT; mb.position = sp; mb.global_position = sp; ev = mb
+				else:
+					var st := InputEventScreenTouch.new(); st.index = 0; st.pressed = true; st.position = sp; ev = st
+				var x0 := cannon_x
+				Input.parse_input_event(ev)
+				await get_tree().create_timer(1.0).timeout
+				var x1 := cannon_x
+				var want := _ptr_world_x(ptr_pos)
+				var ev2: InputEvent = ev.duplicate()
+				ev2.pressed = false
+				Input.parse_input_event(ev2)
+				await get_tree().create_timer(0.2).timeout
+				var ok: bool = (side < 0.4 and x1 < -2.0) or (side > 0.6 and x1 > 2.0) or (side == 0.5 and absf(x1) < 0.6)
+				outs.append(ok)
+				print("HOLDSTEER %s side=%.2f x0=%.2f x1=%.2f target=%.2f %s" % [kind, side, x0, x1, want, "OK" if ok else "FAIL"])
+		print("HOLDSTEER DONE %d/%d ok" % [outs.count(true), outs.size()])
+		get_tree().quit()
+	elif args.size() > 0 and args[0] == "clickcheck":
+		await _clickcheck()
 		get_tree().quit()
 	elif args.size() > 1 and args[0] == "fadeshot":
 		# menuye donus karartmasi: yukleniyor karti ortada mi
@@ -1479,7 +1514,7 @@ func _daily_level() -> Dictionary:
 			var a: String = ops[rng.randi() % ops.size()]
 			var b: String = ops[rng.randi() % ops.size()]
 			gs.append([z, -2.2, 4.0, a, 0.0]); gs.append([z, 2.2, 4.0, b, 0.0])
-	return {"ammo": 400, "time": 120.0, "sections": [{"hp": 260 + rng.randi() % 140, "spawn": rng.randf_range(1.0, 1.6), "brute": 0.12, "gates": gs}]}
+	return {"ammo": 400, "time": 162.0, "sections": [{"hp": 260 + rng.randi() % 140, "spawn": rng.randf_range(1.0, 1.6), "brute": 0.12, "gates": gs}]}
 
 func start_daily() -> void:
 	menu_mode = false
@@ -1631,13 +1666,20 @@ func _kill_e(j: int) -> void:
 func _prewarm_ui() -> void:
 	# ilk harita tiklamasinda ~1 sn siyah ekran: harita/ayarlar ilk kez ciziliyor (yazi tipi
 	# boyutlari, Line2D). Acilista neredeyse saydam olarak 3 kare cizdirip isit.
+	# v8.7: isitma sirasinda saydam paneller menu tiklamalarini yutmasin
+	var mf: Array = []
+	var f0 := Engine.get_process_frames()
 	for p: Control in [mapp, settingsp]:
+		for c in p.find_children("*", "Control", true, false) + [p]:
+			mf.append([c, (c as Control).mouse_filter])
+			(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 		p.modulate.a = 0.02
 		p.visible = true
 	for k in 3: await get_tree().process_frame
 	for p: Control in [mapp, settingsp]:
-		p.visible = false
+		if int(p.get_meta("opened_f", -1)) < f0: p.visible = false   # isitma sirasinda acildiysa acik kalsin
 		p.modulate.a = 1.0
+	for m in mf: (m[0] as Control).mouse_filter = m[1]
 	# bolum/biyom modellerini (kaktus, kar agaci...) ve shaderlarini acilista isit:
 	# ilk L3 girisinde ~1 sn takilma olmasin. Kare basina bir model, kamera onunde minicik.
 	var paths := {"res://assets/nature/cliff_large_rock.glb": true}
@@ -1679,6 +1721,7 @@ func _input(e: InputEvent) -> void:
 	if is_btn:
 		if e.pressed:
 			g_down = true
+			in_gate = false   # v8.7: yeni basis her zaman tazedir (kayip birakma eski kapiyi kilitli tutmasin)
 		else:
 			g_down = false
 			if in_gate:
@@ -1688,20 +1731,24 @@ func _input(e: InputEvent) -> void:
 	if in_gate and (is_btn or e is InputEventScreenDrag or e is InputEventMouseMotion):
 		get_viewport().set_input_as_handled()
 		return
-	if result and result.visible and not res_ready and (is_btn or e is InputEventKey):
-		# sonuc ekrani etkilesime acilmadan gelen hicbir basis/birakma butonlara ulasmaz
-		get_viewport().set_input_as_handled()
-		return
 	if not playing: return
 	if e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
 		holding = e.pressed
 		ptr_down = e.pressed
+		ptr_pos = e.position
 	elif e is InputEventScreenDrag or (e is InputEventMouseMotion and (ptr_down or holding or (e.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0)):
+		ptr_pos = e.position
 		cannon_x = clampf(cannon_x + e.relative.x * _world_per_px() * STEER_GAIN, -LANE + 0.4, LANE - 0.4)
 		if barrel: barrel.position.x = lerpf(barrel.position.x, cannon_x, 0.85)  # ayni karede takip
 		drag_sum += absf(e.relative.x)
 	elif e is InputEventKey and e.keycode == KEY_SPACE:
 		holding = e.pressed
+
+const HOLD_STEER_SPEED := 9.0
+func _ptr_world_x(sp: Vector2) -> float:
+	var y := cam.unproject_position(barrel.global_position).y
+	var d := -(cam.global_transform.affine_inverse() * barrel.global_position).z
+	return cam.project_position(Vector2(sp.x, y), d).x
 
 func _world_per_px() -> float:
 	var w := get_viewport().get_visible_rect().size.x
@@ -1761,6 +1808,10 @@ func _process(dt: float) -> void:
 	if kd != 0.0 and playing:
 		cannon_x = clampf(cannon_x + kd * 10.0 * dt, -LANE + 0.4, LANE - 0.4)
 		drag_sum += 400 * dt
+	# v8.7: basili tutarken top parmagin/farenin x konumuna dogru gider (hareketsiz olsa bile)
+	if ptr_down and playing and not menu_mode and not advancing and cam and barrel:
+		var tx := _ptr_world_x(ptr_pos)
+		cannon_x = clampf(move_toward(cannon_x, tx, HOLD_STEER_SPEED * dt), -LANE + 0.4, LANE - 0.4)
 	if hint.visible:
 		# tutamak topun ustunde baslar, sonra topun etrafinda saga-sola gider
 		hint_t += dt
@@ -1807,6 +1858,7 @@ func _process(dt: float) -> void:
 		board_ref.scale = Vector2.ONE * sc
 		board_ref.position = Vector2(ms.x * 0.5 - 540.0 * sc, maxf(0.0, (ms.y - 1920.0 * sc) * 0.5))
 	_alive(dt)
+	_fit_panels()
 	var t0 := Time.get_ticks_usec()
 	var now := Time.get_ticks_usec()
 	var rdt := 0.016 if last_us == 0 else clampf((now - last_us) / 1000000.0, 0.0, 0.25)
@@ -2468,21 +2520,14 @@ func _show_result(lock := 0.5) -> void:
 	result.visible = true
 	result.modulate.a = 0.0
 	create_tween().tween_property(result, "modulate:a", 1.0, 0.25)
-	# animasyon bitene kadar butonlar tiklanmaz
 	res_lock_id += 1
-	var my_id := res_lock_id
+	# v8.7: sure kilidi yok. Ekrandan once baslamis basis (oyundaki tutma) _mark_screen ile yutulur;
+	# ekran acildiktan sonraki taze bas+birak ilk denemede calisir.
+	res_ready = true
 	for b: Button in res_btns:
-		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.modulate.a = 0.45
-	var tw := create_tween().set_ignore_time_scale(true)  # zafer slow-mo'sunda kilit uzamasin
-	tw.tween_interval(lock)
-	tw.tween_callback(func() -> void:
-		if my_id != res_lock_id: return
-		_mark_screen()  # kilit acilmadan once baslamis basis butona sayilmaz
-		res_ready = true
-		for b: Button in res_btns:
-			b.mouse_filter = Control.MOUSE_FILTER_STOP
-			create_tween().tween_property(b, "modulate:a", 1.0, 0.12))
+		b.mouse_filter = Control.MOUSE_FILTER_STOP
+		b.modulate.a = 0.6
+		create_tween().set_ignore_time_scale(true).tween_property(b, "modulate:a", 1.0, minf(lock, 0.25))
 
 func _on_double() -> void:
 	if doubled or not res_ready: return
@@ -2595,7 +2640,20 @@ func _panel(parent: Node) -> VBoxContainer:
 	v.add_theme_constant_override("separation", 34)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	cc.add_child(v)
+	panel_fit.append([root, cc, v])
 	return v
+
+# v8.7: panel icerigi ekrana sigmiyorsa (yatay pencere) tum paneli ortadan kucult
+var panel_fit: Array = []
+func _fit_panels() -> void:
+	var vh := get_viewport().get_visible_rect().size.y
+	for pf in panel_fit:
+		if not (pf[0] as Control).visible: continue
+		var cc: Control = pf[1]
+		var need: float = (pf[2] as Control).get_combined_minimum_size().y + 200.0
+		var sc := minf(1.0, vh / maxf(need, 1.0))
+		cc.pivot_offset = cc.size * 0.5
+		cc.scale = Vector2.ONE * sc
 
 func _build_ui() -> void:
 	var cl := CanvasLayer.new()
@@ -3461,9 +3519,9 @@ func _fade(cb: Callable, card := "") -> void:
 	await get_tree().process_frame   # kart ekrana ciksin, sonra kur
 	cb.call()
 	_mark_screen()
+	fader.mouse_filter = Control.MOUSE_FILTER_IGNORE   # v8.7: yeni ekran kurulunca hemen tiklanabilir
 	await get_tree().process_frame
 	await get_tree().process_frame
-	fader.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if load_card: load_card.visible = false
 	fade_tw = create_tween().set_ignore_time_scale(true)
 	fade_tw.tween_property(fader, "color:a", 0.0, 0.2)
@@ -3627,6 +3685,7 @@ func _show_map() -> void:
 		dailyp.visible = false
 		result.visible = false
 		mapp.visible = true
+		mapp.set_meta("opened_f", Engine.get_process_frames())
 		_refresh_menu())
 
 func _build_settings(cl: Node) -> void:
@@ -3662,6 +3721,7 @@ func _show_settings() -> void:
 	_mark_screen()
 	menu.visible = false
 	settingsp.visible = true
+	settingsp.set_meta("opened_f", Engine.get_process_frames())
 	_refresh_settings()
 
 func _apply_opts() -> void:
@@ -3819,6 +3879,8 @@ func _autoplay(lv: int) -> void:
 		lose_streak[lv] = int(OS.get_environment("AP_LOSS"))  # deneme: gercek yardim yolu (1 / 2+ yenilgi)
 	start_level(lv)
 	clock_scale = ts
+	if OS.get_environment("AP_SIMSPEED") != "":
+		clock_scale = ts / float(OS.get_environment("AP_SIMSPEED"))  # deneme: yavas cihaz (oyun dunyasi gercek zamanin bu orani hizinda)
 	Engine.time_scale = ts
 	holding = true
 	var shot_i := 0
@@ -3912,3 +3974,113 @@ func _autoplay(lv: int) -> void:
 		await _wait(1.7)
 		get_viewport().get_texture().get_image().save_png(dir + "rr8-ap-L%d-result.png" % (lv + 1))
 	get_tree().quit()
+
+
+# ---------------- tiklama denetimi (v8.7) ----------------
+# Her ekran gecisinde: taze bas+birak ilk denemede calismali; oyundan gelen basili tutmanin birakilmasi hicbir sey tetiklememeli.
+func _cc_mouse(pos: Vector2, down: bool) -> void:
+	var mb := InputEventMouseButton.new()
+	mb.button_index = MOUSE_BUTTON_LEFT
+	mb.pressed = down
+	mb.button_mask = MOUSE_BUTTON_MASK_LEFT if down else 0
+	mb.position = pos
+	mb.global_position = pos
+	Input.parse_input_event(mb)
+
+func _cc_move(pos: Vector2) -> void:
+	var mm := InputEventMouseMotion.new()
+	mm.position = pos
+	mm.global_position = pos
+	Input.parse_input_event(mm)
+
+func _cc_click(b: Control, delay: float) -> void:
+	await get_tree().create_timer(delay, true, false, true).timeout
+	var pos := get_viewport().get_final_transform() * b.get_global_rect().get_center()
+	_cc_move(pos)
+	await get_tree().process_frame
+	_cc_mouse(pos, true)
+	await get_tree().create_timer(0.08, true, false, true).timeout
+	_cc_mouse(pos, false)
+	await get_tree().create_timer(0.7, true, false, true).timeout
+
+func _cc_map_node(i: int) -> Button:
+	return map_nodes[i]["b"]
+
+func _clickcheck() -> void:
+	hint_seen = true
+	coins = 0; unlocked = 2
+	var res: Array = []
+	var center := get_viewport().get_final_transform() * Vector2(get_viewport().get_visible_rect().size.x * 0.5, 1300)
+	# acilis: isitma (saydam harita/ayarlar) surerken OYNA'ya tikla
+	_enter_menu()
+	await get_tree().process_frame
+	_prewarm_ui()
+	await _cc_click(_find_btn(menu, "OYNA"), 0.0)
+	res.append(["acilis isitmasi sirasinda OYNA->harita", mapp.visible])
+	mapp.visible = false
+	# fare birakmasi kayboldu (tarayici disinda birakildi): sonraki taze tiklama yine calismali
+	_fade(func() -> void: start_level(0))
+	await get_tree().create_timer(0.6).timeout
+	_cc_mouse(center, true)
+	await get_tree().create_timer(0.3).timeout
+	_lose("test")
+	await _cc_click(btn_next, 0.3)
+	res.append(["kayip birakma sonrasi Tekrar Dene ilk tik", playing and not result.visible])
+	_cc_mouse(center, false)
+	await get_tree().create_timer(0.3).timeout
+	# Yukleniyor karti kalkar kalkmaz OYNA
+	_lose("test")
+	await _cc_click(_find_btn(result, "Menü"), 0.2)
+	await _cc_click(_find_btn(menu, "OYNA"), 0.0)
+	res.append(["Menü->yukleniyor karti biter bitmez OYNA", mapp.visible])
+	mapp.visible = false
+	for d in [0.05, 0.2, 0.5, 1.0]:
+		_enter_menu()
+		await get_tree().create_timer(0.6).timeout
+		await _cc_click(_find_btn(menu, "OYNA"), d)
+		res.append(["d=%.2f menu->OYNA->harita" % d, mapp.visible])
+		await _cc_click(_cc_map_node(0), d)
+		res.append(["d=%.2f harita->1->ordu" % d, loadout.visible])
+		await _cc_click(_find_btn(loadout, "SAVAŞA BAŞLA"), d)
+		res.append(["d=%.2f ordu->SAVAŞA BAŞLA->oyun" % d, playing and not menu_mode])
+		# oyunda basili tut, basiliyken yenil, sonra birak: hicbir sey tetiklenmemeli
+		await get_tree().create_timer(0.3).timeout
+		_cc_mouse(center, true)
+		await get_tree().create_timer(0.4).timeout
+		_lose("test")
+		await get_tree().create_timer(0.9).timeout
+		var bn: Button = btn_next
+		var hold_pos := get_viewport().get_final_transform() * bn.get_global_rect().get_center()
+		_cc_move(hold_pos)
+		_cc_mouse(hold_pos, false)   # tutmanin birakilmasi Tekrar Dene ustunde
+		await get_tree().create_timer(0.5).timeout
+		res.append(["d=%.2f yenilgi: oyun tutmasini birakmak tetiklemedi" % d, result.visible])
+		await _cc_click(btn_next, d)
+		res.append(["d=%.2f yenilgi->Tekrar Dene->oyun" % d, playing and not result.visible])
+		# zafer: basiliyken kazan, birak (tetiklememeli), sonra Sonraki
+		_cc_mouse(center, true)
+		await get_tree().create_timer(0.3).timeout
+		ammo = 60; time_left = 70.0
+		_win()
+		await get_tree().create_timer(1.0).timeout
+		hold_pos = get_viewport().get_final_transform() * btn_next.get_global_rect().get_center()
+		_cc_move(hold_pos)
+		_cc_mouse(hold_pos, false)
+		await get_tree().create_timer(0.5).timeout
+		res.append(["d=%.2f zafer: oyun tutmasini birakmak tetiklemedi" % d, result.visible])
+		await _cc_click(btn_next, d)
+		res.append(["d=%.2f zafer->Sonraki->ordu" % d, loadout.visible and not result.visible])
+		# ordu -> Geri -> harita -> oyun -> yenilgi -> Menu -> OYNA
+		await _cc_click(_find_btn(loadout, "SAVAŞA BAŞLA"), d)
+		await get_tree().create_timer(0.3).timeout
+		_lose("test")
+		await _cc_click(_find_btn(result, "Menü"), d + 0.3)
+		res.append(["d=%.2f yenilgi->Menü->menu" % d, menu.visible and not result.visible])
+		await _cc_click(_find_btn(menu, "OYNA"), d)
+		res.append(["d=%.2f menu(yenilgiden)->OYNA->harita" % d, mapp.visible])
+		mapp.visible = false
+	var fails := 0
+	for r in res:
+		if not r[1]: fails += 1
+		print("CLICK %s: %s" % ["OK  " if r[1] else "FAIL", r[0]])
+	print("CLICK DONE %d/%d ok" % [res.size() - fails, res.size()])
