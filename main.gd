@@ -1,5 +1,5 @@
 extends Node3D
-## Rift Rush - v8 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
+## Rift Rush - v8.2 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
 
 const LANE := 4.4
 const BASE_Z := -38.0
@@ -26,10 +26,10 @@ const LEVELS := [
 	{"ammo": 190, "time": 120.0, "sections": [
 		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
-	{"ammo": 170, "time": 120.0, "sections": [
+	{"ammo": 185, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 535, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
-	{"ammo": 192, "time": 120.0, "sections": [
+		{"hp": 640, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
+	{"ammo": 186, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
@@ -136,9 +136,13 @@ var test_run := false
 var posts_sent := 0
 var res_btns: Array = []
 var res_lock_id := 0
-var ammo_pop: Label3D = null
+var ammo_pop: Label = null
 var ammo_pop_n := 0
-var ammo_pop_tw: Tween = null
+var banner: Label = null
+var ammo_warn: Label = null
+var hud_crow: Control = null
+var ptr_down := false
+var board_ref: Control = null
 
 var coins := 0
 var unlocked := 1
@@ -324,6 +328,48 @@ func _ready() -> void:
 		print("HINTSHOT knob_center=%s cannon_screen=%s visible_after_1s_fire=%s visible_after_2.5s_fire=%s fire_t=%.2f drag=%.0f" % [hp0, cp0, vis_1s, hint.visible, hint_fire_t, drag_sum])
 		get_viewport().get_texture().get_image().save_png(args[3])
 		get_tree().quit()
+	elif args.size() > 1 and args[0] == "warnshot":
+		hint_seen = true
+		start_level(1)
+		holding = true
+		await get_tree().create_timer(3.0).timeout
+		ammo = 30
+		_combo("HARİKA!")
+		await get_tree().create_timer(0.3).timeout
+		print("WARNSHOT warn_visible=%s" % ammo_warn.visible)
+		get_viewport().get_texture().get_image().save_png(args[1])
+		get_tree().quit()
+	elif args.size() > 0 and args[0] == "freshcheck":
+		var had := hint_seen
+		start_level(0)
+		await get_tree().create_timer(0.5).timeout
+		print("FRESHCHECK hint_seen_loaded=%s hint_visible_L1=%s" % [had, hint.visible])
+		get_tree().quit()
+	elif args.size() > 3 and args[0] == "retryshot":
+		hint_seen = true
+		rate_lv = 0; card_lv = [0, 0, 0, 0]
+		start_level(1)
+		holding = true
+		await get_tree().create_timer(4.0).timeout
+		for k in 9:
+			_reward(-1.6 + k * 0.1, -9.0, false)
+			await get_tree().create_timer(0.05).timeout
+		_combo("HARİKA!")
+		pop_text(Vector3(0, 2.5, sec_off + 0.5), "-3", Color(1, 0.3, 0.3))
+		await get_tree().create_timer(0.15).timeout
+		get_viewport().get_texture().get_image().save_png(args[1])
+		await get_tree().create_timer(0.5).timeout
+		_lose("test")
+		await get_tree().create_timer(0.5).timeout
+		btn_next.pressed.emit()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var fxn := get_tree().get_nodes_in_group("fx").filter(func(n: Node) -> bool: return not n.is_queued_for_deletion()).size()
+		print("RETRYSHOT playing=%s hud_time=%s hud_ammo=%s ammo=%d fx_left=%d banner=%s counter_a=%.2f cannon_z=%.2f barrel_x=%.2f" % [playing, lbl_time.text, lbl_ammo.text, ammo, fxn, banner.visible, ammo_pop.modulate.a, cannon.position.z, barrel.position.x])
+		get_viewport().get_texture().get_image().save_png(args[2])
+		await get_tree().create_timer(1.0).timeout
+		get_viewport().get_texture().get_image().save_png(args[3])
+		get_tree().quit()
 	elif args.size() > 2 and args[0] == "popshot":
 		hint_seen = true
 		rate_lv = 0; card_lv = [0, 0, 0, 0]
@@ -333,7 +379,7 @@ func _ready() -> void:
 		for k in 9:
 			_reward(-1.6 + k * 0.1, -9.0 - k * 0.2, false)
 			await get_tree().create_timer(0.06).timeout
-		print("POPSHOT text=%s" % (ammo_pop.text if is_instance_valid(ammo_pop) else "-"))
+		print("POPSHOT text=%s" % (ammo_pop.text if ammo_pop.modulate.a > 0.0 else "-"))
 		get_viewport().get_texture().get_image().save_png(args[1])
 		await get_tree().create_timer(5.0).timeout
 		get_viewport().get_texture().get_image().save_png(args[2])
@@ -1051,8 +1097,9 @@ func pop_text(pos: Vector3, txt: String, c: Color, big := false) -> void:
 	l.no_depth_test = true
 	l.position = pos
 	add_child(l)
+	l.add_to_group("fx")
 	l.scale = Vector3.ONE * 0.3
-	var tw := create_tween()
+	var tw := l.create_tween()
 	tw.tween_property(l, "scale", Vector3.ONE * 1.4, 0.12).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(l, "scale", Vector3.ONE, 0.1)
 	tw.parallel().tween_property(l, "position", pos + Vector3(0, 2.2, 0), 0.7)
@@ -1246,7 +1293,16 @@ func _start(L: Dictionary, i: int) -> void:
 	hud.visible = true
 	_build_sec_bars(secs.size())
 	_update_titles()
-	cam.position = Vector3(0, 15.0, 13.0)
+	_clear_fx()
+	_refresh_hud()
+	if not menu_mode:
+		holding = false
+		ptr_down = false
+	barrel.position = Vector3.ZERO
+	cannon.position = Vector3(0, 0, 1.8)
+	var land0 := get_window().size.x > get_window().size.y
+	cam.position = Vector3(0, 13.0 if land0 else 15.0, 1.8 + (11.5 if land0 else 13.0))
+	cam.look_at(Vector3(0.0, 0, cam.position.z - (29.0 if land0 else 21.0)))
 	cam_push = 0.0
 	if not hint_seen and not menu_mode and not daily and i == 0:
 		hint.visible = true
@@ -1312,7 +1368,8 @@ func _input(e: InputEvent) -> void:
 	if not playing: return
 	if e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
 		holding = e.pressed
-	elif e is InputEventScreenDrag or (e is InputEventMouseMotion and holding):
+		ptr_down = e.pressed
+	elif e is InputEventScreenDrag or (e is InputEventMouseMotion and (ptr_down or holding or (e.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0)):
 		cannon_x = clampf(cannon_x + e.relative.x * _world_per_px(), -LANE + 0.4, LANE - 0.4)
 		drag_sum += absf(e.relative.x)
 	elif e is InputEventKey and e.keycode == KEY_SPACE:
@@ -1407,6 +1464,12 @@ func _process(dt: float) -> void:
 		cam.fov = 50.0
 		cam.position = Vector3(0.0, 6.0, sec_off + 10.0)
 		cam.look_at(Vector3(0.0, 1.0, sec_off - 30.0))
+	if mapp and mapp.visible and board_ref:
+		# harita her en-boy oraninda sigar (yatay/genis pencerede 1. bolum kesilmez)
+		var ms := mapp.size
+		var sc := minf(1.0, minf(ms.y / 1920.0, ms.x / 1080.0))
+		board_ref.scale = Vector2.ONE * sc
+		board_ref.position = Vector2(ms.x * 0.5 - 540.0 * sc, maxf(0.0, (ms.y - 1920.0 * sc) * 0.5))
 	_alive(dt)
 	var t0 := Time.get_ticks_usec()
 	var now := Time.get_ticks_usec()
@@ -1625,7 +1688,7 @@ func _sim(dt: float) -> void:
 					if ex.size() >= MAXE: break
 					ex.append(clampf(cxw + (q - (cols - 1) * 0.5) * 0.7, -3.8, 3.8)); ez.append(BASE_Z + 3.0 + r * 0.7)
 					ehp.append(1); esc.append(1.0)
-			pop_text(Vector3(cxw, 3.5, BASE_Z + 6.0 + sec_off), "DALGA!", ENEMY, true)
+			_banner("DALGA!", ENEMY)
 			sfx("arrow", -6.0, 0.1)
 	ammo_pop_t -= dt
 	spark_n = 0
@@ -1714,6 +1777,14 @@ func _sim(dt: float) -> void:
 	lbl_ammo.text = "%d" % ammo
 	if ammo_bar: ammo_bar.value = clampf(float(ammo) / start_ammo * 100.0, 0.0, 100.0)
 	lbl_units.text = "%d" % px.size()
+	if ammo_warn:
+		var low := not menu_mode and not bench and ammo < start_ammo * 0.25
+		ammo_warn.visible = low
+		if low:
+			if hud_crow: ammo_warn.position = Vector2(30, hud_crow.get_global_rect().position.y)
+			ammo_warn.modulate.a = 0.65 + 0.35 * sin(t * 6.0)
+	if ammo_pop and ammo_pop_t <= 0.0 and ammo_pop.modulate.a > 0.0:
+		ammo_pop.modulate.a = maxf(0.0, ammo_pop.modulate.a - dt * 4.0)
 	(sec_bars[sec] as ProgressBar).value = 100.0 - float(maxi(base_hp, 0)) / base_max * 100.0
 	if base_hp <= 0:
 		_base_destroyed()
@@ -1735,40 +1806,66 @@ func _reward(x: float, z: float, brute: bool) -> void:
 		ammo += add
 		_ammo_popup(x, z, add)
 
-func _ammo_popup(x: float, z: float, add: int) -> void:
-	# kucuk, kisa omurlu, yolun kenarinda; ard arda gelenler birlesir (+3 mermi)
-	var side := -1.0 if x < 0.0 else 1.0
-	var pos := Vector3(clampf(x + side * 1.3, -LANE + 0.3, LANE - 0.3), 1.4, z + sec_off)
-	if ammo_pop != null and is_instance_valid(ammo_pop) and ammo_pop_t > 0.0:
+func _ammo_popup(_x: float, _z: float, add: int) -> void:
+	# tek bir sayac (ekranda en fazla 1): mermi barinin yaninda, ard arda gelenler birlesir
+	if ammo_pop == null: return
+	if ammo_pop_t > 0.0 and ammo_pop.modulate.a > 0.05:
 		ammo_pop_n += add
 	else:
-		ammo_pop = Label3D.new()
-		ammo_pop.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		# eski yazinin (130, top hizasinda) ekranda ~%40'i; uzaklik telafisiyle her yerde ayni boy
-		var dk := clampf(cam.global_position.distance_to(pos) / cam.global_position.distance_to(Vector3(0, 2.6, sec_off + 0.5)), 1.0, 2.5)
-		ammo_pop.font_size = int(52 * dk)
-		ammo_pop.pixel_size = 0.009
-		ammo_pop.outline_size = int(16 * dk)
-		ammo_pop.font = bold
-		ammo_pop.modulate = CYAN
-		ammo_pop.no_depth_test = true
-		ammo_pop.render_priority = 10
-		ammo_pop.outline_render_priority = 9
-		add_child(ammo_pop)
 		ammo_pop_n = add
-		ammo_pop.position = pos
-	ammo_pop_t = 0.5
-	var l := ammo_pop
-	l.text = "+%d mermi" % ammo_pop_n
-	l.modulate.a = 1.0
-	l.scale = Vector3.ONE * 1.25
-	if ammo_pop_tw != null and ammo_pop_tw.is_valid(): ammo_pop_tw.kill()
-	var tw := create_tween()
-	ammo_pop_tw = tw
-	tw.tween_property(l, "scale", Vector3.ONE, 0.08)
-	tw.parallel().tween_property(l, "position", l.position + Vector3(0, 0.5, 0), 0.4)
-	tw.tween_property(l, "modulate:a", 0.0, 0.15)
-	tw.tween_callback(l.queue_free)
+	ammo_pop_t = 0.9
+	ammo_pop.text = "+%d mermi" % ammo_pop_n
+	ammo_pop.modulate.a = 1.0
+	if ammo_bar:
+		var r := ammo_bar.get_global_rect()
+		ammo_pop.position = Vector2(r.end.x + 12, r.get_center().y - ammo_pop.size.y * 0.5)
+	ammo_pop.scale = Vector2.ONE * 1.2
+	ammo_pop.create_tween().tween_property(ammo_pop, "scale", Vector2.ONE, 0.1)
+
+func _banner(txt: String, col: Color) -> void:
+	# kucuk, kisa, ust HUD'un hemen altinda; yenisi eskisinin yerine gecer (yigilma yok)
+	if menu_mode or banner == null: return
+	var y := 330.0
+	if hud_crow: y = hud_crow.get_global_rect().end.y + 8.0
+	banner.text = txt
+	banner.add_theme_color_override("font_color", col)
+	banner.position = Vector2(0, y)
+	banner.size = Vector2(get_viewport().get_visible_rect().size.x, 80)
+	banner.pivot_offset = banner.size * 0.5
+	banner.visible = true
+	banner.modulate.a = 1.0
+	banner.scale = Vector2.ONE * 0.6
+	for tw0 in banner.get_meta("tws", []):
+		if (tw0 as Tween).is_valid(): (tw0 as Tween).kill()
+	var tw := banner.create_tween().set_ignore_time_scale(true)
+	banner.set_meta("tws", [tw])
+	tw.tween_property(banner, "scale", Vector2.ONE * 1.08, 0.1).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(banner, "scale", Vector2.ONE, 0.06)
+	tw.tween_interval(0.35)
+	tw.tween_property(banner, "modulate:a", 0.0, 0.2)
+	tw.tween_callback(func() -> void: banner.visible = false)
+
+func _clear_fx() -> void:
+	# onceki kosudan kalan tum yazilar/afisler temizlenir (yeni bolum, tekrar dene, menu)
+	for n in get_tree().get_nodes_in_group("fx"):
+		n.queue_free()
+	if banner:
+		for tw0 in banner.get_meta("tws", []):
+			if (tw0 as Tween).is_valid(): (tw0 as Tween).kill()
+		banner.visible = false
+	if ammo_pop:
+		ammo_pop.modulate.a = 0.0
+	ammo_pop_t = 0.0
+	ammo_pop_n = 0
+	if ammo_warn: ammo_warn.visible = false
+
+func _refresh_hud() -> void:
+	lbl_time.text = "%d" % ceili(maxf(0.0, time_left))
+	lbl_ammo.text = "%d" % ammo
+	if ammo_bar: ammo_bar.value = clampf(float(ammo) / start_ammo * 100.0, 0.0, 100.0)
+	lbl_units.text = "%d" % px.size()
+	for k in sec_bars.size():
+		(sec_bars[k] as ProgressBar).value = 0.0
 
 func _arrow(a: Vector3, b: Vector3) -> void:
 	var ar: MeshInstance3D = arrows[arrow_i]
@@ -1808,14 +1905,13 @@ func _base_destroyed() -> void:
 		_win()
 		return
 	# sonraki kaleye ilerle: kalan birlikler mermiye doner
-	var bonus := px.size() / 2 + 15
+	var bonus := px.size() / 2 + 30
 	ammo += bonus
-	pop_text(Vector3(barrel.position.x, 4, sec_off - 6), "+%d MERMİ" % bonus, CYAN, true)
+	_banner("Kale yıkıldı: +%d MERMİ" % bonus, CYAN)
 	for i in range(0, px.size(), 8):
 		burst(Vector3(px[i], 0.8, pz[i] + sec_off), CYAN, 8)
 	_clear_units()
 	advancing = true
-	holding = false
 	sec += 1
 	(sec_bars[sec - 1] as ProgressBar).value = 100.0
 	_update_titles()
@@ -1993,7 +2089,7 @@ func _lose(why: String) -> void:
 	btn_revive.visible = not revived
 	btn_next.text = "Tekrar Dene"
 	btn_next.visible = true
-	_show_result()
+	_show_result(0.3)
 
 func _show_result(lock := 0.5) -> void:
 	hud.visible = false
@@ -2006,7 +2102,7 @@ func _show_result(lock := 0.5) -> void:
 	for b: Button in res_btns:
 		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.modulate.a = 0.45
-	var tw := create_tween()
+	var tw := create_tween().set_ignore_time_scale(true)  # zafer slow-mo'sunda kilit uzamasin
 	tw.tween_interval(lock)
 	tw.tween_callback(func() -> void:
 		if my_id != res_lock_id: return
@@ -2166,6 +2262,24 @@ func _build_ui() -> void:
 	var cpad := Control.new()
 	cpad.custom_minimum_size = Vector2(30, 0)
 	crow.add_child(cpad)
+	hud_crow = crow
+	ammo_pop = _label("", 40, hud, CYAN)
+	ammo_pop.add_theme_font_override("font", bold)
+	ammo_pop.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	ammo_pop.size = Vector2(260, 56)
+	ammo_pop.position = Vector2(810, 170)
+	ammo_pop.modulate.a = 0.0
+	ammo_warn = _label("Mermi azalıyor —\nkapılardan geç, düşman vur", 34, hud, Color(1.0, 0.6, 0.25))
+	ammo_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	ammo_warn.add_theme_constant_override("outline_size", 14)
+	ammo_warn.add_theme_font_override("font", bold)
+	ammo_warn.size = Vector2(700, 96)
+	ammo_warn.visible = false
+	banner = _label("", 64, hud, Color.WHITE)
+	banner.add_theme_font_override("font", bold)
+	banner.add_theme_color_override("font_outline_color", Color(0.2, 0.05, 0.0))
+	banner.add_theme_constant_override("outline_size", 18)
+	banner.visible = false
 	var hl := _label("Sürükle: nişan · Basılı tut: ateş · Düşman öldür: +mermi", 34, hud, Color(1, 1, 1, 0.7))
 	hl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	hl.offset_top = -80
@@ -2873,31 +2987,7 @@ func _vib(ms: int) -> void:
 
 func _combo(txt: String) -> void:
 	if menu_mode: return
-	var l := Label.new()
-	l.text = txt
-	l.add_theme_font_override("font", bold)
-	l.add_theme_font_size_override("font_size", 140)
-	l.add_theme_color_override("font_color", Color(1.0, 0.86, 0.2))
-	l.add_theme_color_override("font_outline_color", Color(0.45, 0.08, 0.0))
-	l.add_theme_constant_override("outline_size", 40)
-	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
-	l.add_theme_constant_override("shadow_offset_y", 12)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.anchor_right = 1.0
-	l.offset_top = 520
-	l.offset_bottom = 720
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui_layer.add_child(l)
-	l.pivot_offset = Vector2(get_viewport().get_visible_rect().size.x * 0.5, 100)
-	l.rotation = deg_to_rad(randf_range(-7, 7))
-	l.scale = Vector2.ONE * 0.2
-	var tw := create_tween().set_ignore_time_scale(true)
-	tw.tween_property(l, "scale", Vector2.ONE * 1.25, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(l, "scale", Vector2.ONE, 0.1)
-	tw.tween_interval(0.45)
-	tw.tween_property(l, "modulate:a", 0.0, 0.3)
-	tw.parallel().tween_property(l, "offset_top", 440.0, 0.3)
-	tw.tween_callback(l.queue_free)
+	_banner(txt, Color(1.0, 0.86, 0.2))
 	sfx("combo", -4.0, 0.2, 0.0)
 	_punch(4.0)
 	_vib(40)
@@ -2918,8 +3008,9 @@ func _coin_burst(wp: Vector3, n: int) -> void:
 		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		c.position = sp + Vector2(randf_range(-50, 50), randf_range(-50, 50))
 		ui_layer.add_child(c)
+		c.add_to_group("fx")
 		var mid := sp + Vector2(randf_range(-200, 200), randf_range(-260, -60))
-		var tw := create_tween().set_ignore_time_scale(true)
+		var tw := c.create_tween().set_ignore_time_scale(true)
 		tw.tween_property(c, "position", mid, 0.28).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 		tw.tween_property(c, "position", tgt - Vector2(24, 24), 0.42 + k * 0.04).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 		tw.tween_callback(func() -> void:
@@ -2934,9 +3025,13 @@ func _fade(cb: Callable) -> void:
 	fader.mouse_filter = Control.MOUSE_FILTER_STOP
 	var tw := create_tween().set_ignore_time_scale(true)
 	tw.tween_property(fader, "color:a", 1.0, 0.16)
-	tw.tween_callback(cb)
-	tw.tween_property(fader, "color:a", 0.0, 0.3)
-	tw.tween_callback(func() -> void: fader.mouse_filter = Control.MOUSE_FILTER_IGNORE)
+	tw.tween_callback(func() -> void:
+		cb.call()
+		fader.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var tw2 := create_tween().set_ignore_time_scale(true)
+		tw2.tween_property(fader, "color:a", 0.0, 0.25))
 
 func _music(which: int) -> void:
 	cur_music = which
@@ -2953,6 +3048,7 @@ func _music(which: int) -> void:
 
 func _enter_menu() -> void:
 	Engine.time_scale = 1.0
+	_clear_fx()
 	result.visible = false
 	hud.visible = false
 	loadout.visible = false
@@ -3040,6 +3136,7 @@ func _build_map(cl: Node) -> void:
 	board.offset_bottom = 1920
 	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mapp.add_child(board)
+	board_ref = board
 	var tl := _label("HARİTA", 96, board, Color(1, 1, 1))
 	tl.position = Vector2(0, 50)
 	tl.size = Vector2(1080, 120)
@@ -3140,7 +3237,7 @@ func _anim_win(st: int) -> float:
 		var p: Polygon2D = res_stars[k]
 		p.color = Color(0.3, 0.27, 0.4)
 		p.scale = Vector2.ONE
-	var tw := create_tween()
+	var tw := create_tween().set_ignore_time_scale(true)
 	for k in st:
 		var p: Polygon2D = res_stars[k]
 		tw.tween_interval(0.1)
@@ -3301,7 +3398,7 @@ func _autoplay(lv: int) -> void:
 				var nx := 0.0
 				for j in ex.size():
 					if ez[j] > nz: nz = ez[j]; nx = ex[j]
-				if r < 0.15 and nz > -12.0:
+				if r < 0.15 and nz > -12.0 and OS.get_environment("AP_NOCHASE") != "1":
 					tgt_x = nx
 				elif r < 0.85 and bestg != null:
 					tgt_g = bestg
@@ -3312,11 +3409,17 @@ func _autoplay(lv: int) -> void:
 			var want: float = (tgt_g["cx"] + tgt_x) if tgt_g != null else tgt_x
 			cannon_x = move_toward(cannon_x, want, 8.0 * gdt)
 		else:
-			var best := 99.0
-			var tx := 0.0
-			for g in gates:
-				if g["sec"] == sec and String(g["op"]).begins_with("x") and absf(g["z"]) < best:
-					best = absf(g["z"]); tx = g["cx"]
+			# en iyi sutun: yesil kapilari topla, kirmizi (-5) kapilardan kac
+			var tx := cannon_x
+			var bests := -999.0
+			for k in 39:
+				var xx := -3.8 + k * 0.2
+				var sc := -absf(xx - cannon_x) * 0.05
+				for g in gates:
+					if g["sec"] != sec or absf(xx - g["cx"]) >= g["w"] * 0.5 - 0.3: continue
+					sc += {"x2": 2.0, "x3": 3.0, "+10": 1.0, "dev": 0.5, "okcu": 0.4, "kalkan": 0.4, "-5": -6.0}.get(g["op"], 0.0)
+				if sc > bests:
+					bests = sc; tx = xx
 			if ex.size() > 0 and randf() < 0.3:
 				var nz := -999.0
 				for j in ex.size():
