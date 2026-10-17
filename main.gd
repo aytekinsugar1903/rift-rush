@@ -10,15 +10,25 @@ const PSPEED := 7.0
 const CYAN := Color(0.15, 0.95, 1.0)
 const ENEMY := Color(1.0, 0.38, 0.12)
 const PURPLE := Color(0.65, 0.2, 1.0)
+const HP_MULT := [1.0, 1.0, 0.9, 0.85, 0.85, 0.85]
+var maxp := 900
+var last_us := 0
+var wave_t := 0.0
+var kill_acc := 0
+var ammo_pop_t := 0.0
+var ammo_bar: ProgressBar
+var kale_coins := 0
+var last_csf := -1.0
+var is_low := false
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 80, "time": 100.0, "sections": [
-		{"hp": 90, "spawn": 2.6, "brute": 0.0, "gates": [[-10.0, -2.2, 4.0, "x2", 0.0], [-10.0, 2.2, 4.0, "+10", 0.0], [-23.0, 0.0, 3.6, "x3", 1.4]]},
-		{"hp": 220, "spawn": 1.9, "brute": 0.1, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.4, "+10", 2.0], [-27.0, 0.0, 3.6, "x3", 1.2]]}]},
-	{"ammo": 90, "time": 110.0, "sections": [
-		{"hp": 150, "spawn": 1.8, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 320, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "kalkan", 0.0], [-18.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.2, 4.0, "x2", 0.0], [-27.0, 2.2, 4.0, "okcu", 0.0]]}]},
+	{"ammo": 120, "time": 120.0, "sections": [
+		{"hp": 60, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.2, 4.0, "x2", 0.0], [-10.0, 2.2, 4.0, "+10", 0.0], [-23.0, 0.0, 3.6, "x3", 1.4]]},
+		{"hp": 150, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.4, "+10", 2.0], [-27.0, 0.0, 3.6, "x3", 1.2]]}]},
+	{"ammo": 120, "time": 120.0, "sections": [
+		{"hp": 130, "spawn": 2.2, "brute": 0.04, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
+		{"hp": 240, "spawn": 1.7, "brute": 0.08, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
 	{"ammo": 100, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
@@ -228,10 +238,15 @@ var fire_mesh: QuadMesh
 var ft_res: Array = []
 var wind_mats: Array = []
 var icon_mode := false
+var win_lines := ""
 
 func _ready() -> void:
 	opt["shadows"] = not (OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios"))
 	_load()
+	is_low = OS.has_feature("web") or OS.has_feature("mobile") or OS.get_environment("LOWEND") == "1"
+	if is_low:
+		opt["shadows"] = false
+		maxp = 520
 	bold = FontVariation.new()
 	bold.base_font = ThemeDB.fallback_font
 	bold.variation_embolden = 1.1
@@ -283,6 +298,8 @@ func _ready() -> void:
 		await get_tree().create_timer(2.5).timeout
 		get_viewport().get_texture().get_image().save_png(args[1])
 		get_tree().quit()
+	elif args.size() > 0 and args[0] == "autoplay":
+		_autoplay(int(args[1]) if args.size() > 1 else 0)
 	elif args.size() > 0 and args[0] == "flowtest":
 		_enter_menu()
 		_flowtest(args[1] if args.size() > 1 else "")
@@ -652,7 +669,7 @@ var shadows_on := false
 
 # ---------------- dunya ----------------
 func _build_world() -> void:
-	shadows_on = OS.get_environment("SHADOWS") == "1" or not (OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or OS.get_environment("SHADOWS") == "0")
+	shadows_on = OS.get_environment("SHADOWS") == "1" or not (OS.has_feature("web") or OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or OS.get_environment("SHADOWS") == "0")
 	envr = Environment.new()
 	var env := envr
 	var sky := Sky.new()
@@ -994,7 +1011,7 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 		"okcu": col = Color(0.2, 0.75, 1.0)
 		"dev": col = Color(1.0, 0.6, 0.1)
 		"kalkan": col = Color(1.0, 0.85, 0.2)
-	var w: float = gd[2]
+	var w: float = float(gd[2]) * 0.88
 	var n := Node3D.new()
 	n.position = Vector3(gd[1], 0, z_world)
 	level_root.add_child(n)
@@ -1007,11 +1024,13 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	var pmat := _mat(col.lightened(0.15), 0.35, 1.0, 0.0, 0.25)
 	_box(Vector3(w - 0.4, 2.9, 0.12), Vector3(0, 1.5, 0), pmat, n, false)
 	var lb := Label3D.new()
-	lb.text = {"okcu": "OKÇU", "dev": "DEV\n10→1", "kalkan": "KALKAN\n+1"}.get(gd[3], String(gd[3]).replace("x", "×"))
-	lb.font_size = int(220 * clampf(w / 4.4, 0.62, 1.0))
-	if lb.text.contains("\n"): lb.font_size = int(lb.font_size * 0.6)
+	lb.text = {"okcu": "OKÇU", "dev": "DEV\n10:1", "kalkan": "KALKAN\n+1"}.get(gd[3], String(gd[3]).replace("x", "×"))
+	var chars := 1
+	for ln in lb.text.split("\n"): chars = maxi(chars, ln.length())
+	lb.font_size = clampi(int((w - 0.7) / (chars * 0.66 * 0.0105)), 40, 200)
+	if lb.text.contains("\n"): lb.font_size = mini(lb.font_size, 110)
 	lb.pixel_size = 0.0105
-	lb.outline_size = 64
+	lb.outline_size = int(lb.font_size * 0.25)
 	lb.font = bold
 	lb.outline_modulate = col.darkened(0.6)
 	lb.position = Vector3(0, 1.7, 0.4)
@@ -1020,7 +1039,7 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	var charge := 10 if gd[3] == "+10" else (5 if gd[3] == "-5" else 0)
 	var cl := Label3D.new()
 	cl.font = bold
-	cl.font_size = 115
+	cl.font_size = 95
 	cl.pixel_size = 0.009
 	cl.outline_size = 44
 	cl.modulate = Color(col.r, col.g, col.b, 0.0)
@@ -1158,6 +1177,8 @@ func _start(L: Dictionary, i: int) -> void:
 		bases.append(_make_base(BASE_Z + off, si == secs.size() - 1))
 	ammo = L["ammo"]
 	time_left = L["time"]
+	kale_coins = 0
+	kill_acc = 0
 	sec = 0
 	sec_off = 0.0
 	_setup_section()
@@ -1172,22 +1193,24 @@ func _start(L: Dictionary, i: int) -> void:
 	_update_titles()
 	cam.position = Vector3(0, 15.0, 13.0)
 	cam_push = 0.0
-	if not hint_seen and not menu_mode:
+	if not hint_seen and not menu_mode and not daily and i == 0:
 		hint.visible = true
 		drag_sum = 0.0
 
 func _setup_section() -> void:
 	var S: Dictionary = cur_L["sections"][sec]
 	base_max = S["hp"]
+	base_max = int(base_max * (1.0 if daily else HP_MULT[mini(level, 5)]))
 	base_hp = base_max
 	spawn_t = 2.0
+	wave_t = 7.0
 
 func _update_titles() -> void:
 	var n: int = cur_L["sections"].size()
 	if daily:
-		lbl_level.text = "GÜNLÜK • %s • %d atış" % [daily_day, shots_fired]
+		lbl_level.text = "GÜNLÜK · %s · %d atış" % [daily_day, shots_fired]
 		return
-	lbl_level.text = "BÖLÜM %d • %s" % [level + 1, "BOSS" if sec == n - 1 else "KALE %d/%d" % [sec + 1, n]]
+	lbl_level.text = "BÖLÜM %d · %s" % [level + 1, "BOSS" if sec == n - 1 else "KALE %d/%d" % [sec + 1, n]]
 
 func _fire_rate() -> float:
 	return 6.0 + rate_lv * 1.5
@@ -1202,7 +1225,7 @@ func _base_hp(ty: int) -> int:
 	return 1
 
 func _add_p(x: float, z: float, dx: float, mask: int, ty := 0, hp := -1) -> void:
-	if px.size() >= MAXP: return
+	if px.size() >= maxp: return
 	if ty == 2:
 		if giants_n >= 25 and px.size() > 0:
 			var k0 := randi() % px.size()
@@ -1233,18 +1256,29 @@ func _input(e: InputEvent) -> void:
 	if e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
 		holding = e.pressed
 	elif e is InputEventScreenDrag or (e is InputEventMouseMotion and holding):
-		var w := get_viewport().get_visible_rect().size.x
-		cannon_x = clampf(cannon_x + e.relative.x / w * 14.0, -LANE + 0.4, LANE - 0.4)
+		cannon_x = clampf(cannon_x + e.relative.x * _world_per_px(), -LANE + 0.4, LANE - 0.4)
 		drag_sum += absf(e.relative.x)
 	elif e is InputEventKey and e.keycode == KEY_SPACE:
 		holding = e.pressed
+
+func _world_per_px() -> float:
+	var w := get_viewport().get_visible_rect().size.x
+	if cam == null or barrel == null: return 14.0 / w
+	var y := cam.unproject_position(barrel.global_position).y
+	var d := -(cam.global_transform.affine_inverse() * barrel.global_position).z
+	var a := cam.project_position(Vector2(0, y), d)
+	var b := cam.project_position(Vector2(w, y), d)
+	return absf(b.x - a.x) / w
 
 # ---------------- dongu ----------------
 func _process(dt: float) -> void:
 	if cam == null: return
 	var ws := get_window().size
 	var land := ws.x > ws.y
-	get_window().content_scale_factor = 1.35 if land else 1.0
+	var csf := 1.35 if land else 1.0
+	if csf != last_csf:
+		last_csf = csf
+		get_window().content_scale_factor = csf
 	t += dt
 	for c in crystals:
 		(c[0] as Node3D).position.y = c[1] + sin(t * 1.2 + c[2]) * 0.4
@@ -1275,28 +1309,28 @@ func _process(dt: float) -> void:
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): kd -= 1.0
 	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): kd += 1.0
 	if kd != 0.0 and playing:
-		cannon_x = clampf(cannon_x + kd * 9.0 * dt, -LANE + 0.4, LANE - 0.4)
+		cannon_x = clampf(cannon_x + kd * 10.0 * dt, -LANE + 0.4, LANE - 0.4)
 		drag_sum += 400 * dt
 	if hint.visible:
 		hand.position.x = 540 - 60 + sin(t * 3.0) * 220
-		if drag_sum > 500.0:
+		if drag_sum > 40.0 and shots_fired > 3:
 			hint.visible = false
 			hint_seen = true
 			_save()
 	cannon.position = Vector3(0, 0, sec_off + 1.8)
-	barrel.position.x = lerpf(barrel.position.x, cannon_x, minf(1.0, dt * 18.0))
+	barrel.position.x = lerpf(barrel.position.x, cannon_x, minf(1.0, dt * 35.0))
 	barrel.position.z = lerpf(barrel.position.z, 0.0, minf(1.0, dt * 14.0))
 	flash_t = maxf(0.0, flash_t - dt * 10.0)
 	flash.scale = Vector3.ONE * flash_t * 1.1
 	flash_light.light_energy = flash_t * 4.0
-	trauma = maxf(0.0, trauma - dt * 1.8)
+	trauma = maxf(0.0, trauma - dt * 2.5)
 	# kamera: topun arkasi, alcak acı, ordu ilerledikce ileri itilir
-	cam_push = lerpf(cam_push, clampf(-front * 0.12, 0.0, 3.5), minf(1.0, dt * 2.0))
+	cam_push = lerpf(cam_push, clampf(-front * 0.06, 0.0, 1.8), minf(1.0, dt * 2.0))
 	var cz := cannon.position.z
-	var target := Vector3(barrel.position.x * 0.35, 13.0 if land else 15.0, cz + (11.5 if land else 13.0) - cam_push)
+	var target := Vector3(0.0, 13.0 if land else 15.0, cz + (11.5 if land else 13.0) - cam_push)
 	cam.position = cam.position.lerp(target, minf(1.0, dt * 4.0))
-	var sh := trauma * trauma * 0.5
-	cam.look_at(Vector3(barrel.position.x * 0.2, 0, cam.position.z - (29.0 if land else 21.0)) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
+	var sh := trauma * trauma * 0.18
+	cam.look_at(Vector3(0.0, 0, cam.position.z - (29.0 if land else 21.0)) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
 	if menu_mode:
 		var ang := t * 0.12
 		cam.position = Vector3(sin(ang) * 20.0, 10.0, -18.0 + cos(ang) * 20.0)
@@ -1313,8 +1347,15 @@ func _process(dt: float) -> void:
 		cam.look_at(Vector3(0.0, 1.0, sec_off - 30.0))
 	_alive(dt)
 	var t0 := Time.get_ticks_usec()
-	if playing and not advancing:
-		_sim(dt)
+	var now := Time.get_ticks_usec()
+	var rdt := 0.016 if last_us == 0 else clampf((now - last_us) / 1000000.0, 0.0, 0.25)
+	last_us = now
+	if bench: rdt = dt
+	var rem := rdt * Engine.time_scale
+	while playing and not advancing and rem > 0.00001:
+		var stp := minf(rem, 0.05)
+		_sim(stp)
+		rem -= stp
 	_render()
 	if bench: cpu_us.append(Time.get_ticks_usec() - t0)
 
@@ -1483,7 +1524,7 @@ func _sim(dt: float) -> void:
 	if base_hits > 0:
 		base_hp -= base_hits
 		sfx("basehit", -6.0, 0.09)
-		trauma = minf(1.0, trauma + 0.03 * base_hits)
+		trauma = minf(0.5, trauma + 0.01 * base_hits)
 		var bn: Node3D = B["node"]
 		var bs: float = 1.25 if sec == bases.size() - 1 else 1.0
 		bn.scale = Vector3(1.05, 0.96, 1.05) * bs
@@ -1510,6 +1551,20 @@ func _sim(dt: float) -> void:
 			ex.append(randf_range(-2.5, 2.5)); ez.append(BASE_Z + 2.6 + k * 0.6)
 			ehp.append(10 if brute else 1); esc.append(1.9 if brute else 1.0)
 		burst(Vector3(0, 2, (B["node"] as Node3D).position.z + 2.0), PURPLE, 16)
+	if not menu_mode and not daily and level > 0:
+		wave_t -= dt
+		if wave_t <= 0.0:
+			wave_t = maxf(9.0, 16.0 - level * 1.4) * randf_range(0.85, 1.15)
+			var cxw := randf_range(-2.0, 2.0)
+			var cols := mini(3 + level / 2, 5)
+			for r in 3:
+				for q in cols:
+					if ex.size() >= MAXE: break
+					ex.append(clampf(cxw + (q - (cols - 1) * 0.5) * 0.7, -3.8, 3.8)); ez.append(BASE_Z + 3.0 + r * 0.7)
+					ehp.append(1); esc.append(1.0)
+			pop_text(Vector3(cxw, 3.5, BASE_Z + 6.0 + sec_off), "DALGA!", ENEMY, true)
+			sfx("arrow", -6.0, 0.1)
+	ammo_pop_t -= dt
 	spark_n = 0
 	for k in buckets.size():
 		buckets[k] = PackedInt32Array()
@@ -1563,6 +1618,7 @@ func _sim(dt: float) -> void:
 			if hp <= 0: break
 		ehp[j] = hp
 		if hp <= 0:
+			_reward(exj, ezj, esc[j] > 1.5)
 			burst(Vector3(exj, 0.8, ezj + sec_off), ENEMY if esc[j] < 1.5 else Color(1, 0.8, 0.2), 18)
 			if esc[j] < 1.5: _fly(exj, ezj, 1)
 			if esc[j] > 1.5:
@@ -1581,16 +1637,19 @@ func _sim(dt: float) -> void:
 			if Vector2(ex[j], ez[j]).distance_squared_to(bl) < rr * rr:
 				ehp[j] -= 3
 				if ehp[j] <= 0:
+					_reward(ex[j], ez[j], esc[j] > 1.5)
 					if esc[j] < 1.5: _fly(ex[j], ez[j], 1)
 					_kill_e(j)
 	blasts.clear()
 	for j in range(ex.size() - 1, -1, -1):
 		if ehp[j] <= 0:
+			_reward(ex[j], ez[j], esc[j] > 1.5)
 			burst(Vector3(ex[j], 0.8, ez[j] + sec_off), ENEMY, 12)
 			if esc[j] < 1.5: _fly(ex[j], ez[j], 1)
 			_kill_e(j)
 	lbl_time.text = "%d" % ceili(maxf(0.0, time_left))
 	lbl_ammo.text = "%d" % ammo
+	if ammo_bar: ammo_bar.value = clampf(float(ammo) / start_ammo * 100.0, 0.0, 100.0)
 	lbl_units.text = "%d" % px.size()
 	(sec_bars[sec] as ProgressBar).value = 100.0 - float(maxi(base_hp, 0)) / base_max * 100.0
 	if base_hp <= 0:
@@ -1598,11 +1657,22 @@ func _sim(dt: float) -> void:
 		return
 	if bench or menu_mode: return
 	if time_left <= 0.0:
-		_lose("Süre doldu!")
+		_lose("Süre doldu!\nİpucu: ×2 / ×3 kapılarından geçir,\nkırmızı kapılardan kaçın.")
 	elif ammo <= 0 and px.size() == 0:
 		end_grace += dt
 		if end_grace > 0.6:
-			_lose("Ordun tükendi!")
+			_lose("Mermin ve ordun bitti!\nİpucu: Düşman öldürmek mermi verir.\nTopa ulaşan düşman 3 mermi götürür.")
+
+func _reward(x: float, z: float, brute: bool) -> void:
+	if menu_mode: return
+	kill_acc += 6 if brute else 1
+	if kill_acc >= 3:
+		var add := kill_acc / 3
+		kill_acc -= add * 3
+		ammo += add
+		if ammo_pop_t <= 0.0 or brute:
+			ammo_pop_t = 0.7
+			pop_text(Vector3(barrel.position.x, 2.6, sec_off + 0.5), "+%d mermi" % add if brute else "+mermi", CYAN)
 
 func _arrow(a: Vector3, b: Vector3) -> void:
 	var ar: MeshInstance3D = arrows[arrow_i]
@@ -1637,6 +1707,7 @@ func _base_destroyed() -> void:
 	tw.tween_property(bn, "scale", bn.scale * Vector3(1.15, 0.2, 1.15), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tw.tween_callback(bn.hide)
 	coins += 15
+	kale_coins += 15
 	if sec + 1 >= bases.size():
 		_win()
 		return
@@ -1785,9 +1856,17 @@ func _win() -> void:
 		btn_next.text = "Sıralama"
 		_show_result()
 		return
-	earned = 40 + 30 * (level + 1) + mini(ammo, 150) + int(time_left)
+	var c_lvl := 40 + 30 * (level + 1)
+	var c_ammo := mini(ammo, 150)
+	var c_time := int(time_left)
+	earned = c_lvl + c_ammo + c_time
 	coins += earned
-	var st := 3 if ammo >= start_ammo * 0.35 else (2 if ammo >= start_ammo * 0.12 else 1)
+	var tmax: float = cur_L["time"]
+	var s_time := time_left >= tmax * 0.3
+	var s_ammo := ammo >= start_ammo * 0.25
+	var st := 1 + int(s_time) + int(s_ammo)
+	hint_seen = true
+	win_lines = "1. yıldız: Kale yıkıldı\n2. yıldız: %d+ sn kalsın (%d) %s\n3. yıldız: %d+ mermi kalsın (%d) %s\nBölüm %d + Mermi %d + Süre %d + Kaleler %d" % [int(tmax * 0.3), c_time, "OK" if s_time else "X", int(start_ammo * 0.25), ammo, "OK" if s_ammo else "X", c_lvl, c_ammo, c_time, kale_coins]
 	stars_best[level] = maxi(int(stars_best.get(level, 0)), st)
 	doubled = false
 	levels_since_ad += 1
@@ -1897,6 +1976,7 @@ func _btn(txt: String, c: Color, parent: Node, cb: Callable) -> Button:
 	b.add_theme_color_override("font_color", Color.WHITE)
 	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
 	b.add_theme_constant_override("outline_size", 10)
+	b.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	b.pressed.connect(func() -> void: sfx("click", -6.0, 0.03, 0.05))
 	b.pressed.connect(cb)
 	parent.add_child(b)
@@ -1952,6 +2032,18 @@ func _build_ui() -> void:
 	lbl_time = _chip(row, Color(1.0, 0.8, 0.2), "time")
 	lbl_ammo = _chip(row, Color(1.0, 0.5, 0.2), "ammo")
 	lbl_units = _chip(row, CYAN, "army")
+	var abc := CenterContainer.new()
+	abc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top.add_child(abc)
+	ammo_bar = ProgressBar.new()
+	ammo_bar.custom_minimum_size = Vector2(520, 26)
+	ammo_bar.show_percentage = false
+	ammo_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fb := StyleBoxFlat.new(); fb.bg_color = Color(1.0, 0.55, 0.2); fb.set_corner_radius_all(13)
+	var bb := StyleBoxFlat.new(); bb.bg_color = Color(0.05, 0.05, 0.15, 0.7); bb.set_corner_radius_all(13)
+	ammo_bar.add_theme_stylebox_override("fill", fb)
+	ammo_bar.add_theme_stylebox_override("background", bb)
+	abc.add_child(ammo_bar)
 	var crow := HBoxContainer.new()
 	crow.alignment = BoxContainer.ALIGNMENT_END
 	crow.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1965,7 +2057,7 @@ func _build_ui() -> void:
 	var cpad := Control.new()
 	cpad.custom_minimum_size = Vector2(30, 0)
 	crow.add_child(cpad)
-	var hl := _label("A/D veya sürükle: nişan  •  Basılı tut: ateş", 34, hud, Color(1, 1, 1, 0.7))
+	var hl := _label("Sürükle: nişan · Basılı tut: ateş · Düşman öldür: +mermi", 34, hud, Color(1, 1, 1, 0.7))
 	hl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	hl.offset_top = -80
 	hl.offset_bottom = -30
@@ -2035,7 +2127,9 @@ func _build_ui() -> void:
 		stars_box.add_child(sc)
 		var sp := _star(sc, 80, Color(0.3, 0.27, 0.4), Vector2(95, 100 - (16 if k == 1 else 0)))
 		res_stars.append(sp)
-	res_info = _label("", 56, rv, Color(1, 0.85, 0.2))
+	res_info = _label("", 44, rv, Color(1, 0.85, 0.2))
+	res_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	res_info.custom_minimum_size = Vector2(860, 0)
 	btn_double = _btn("2× Coin  (Reklam izle)", Color(0.95, 0.6, 0.1), rv, _on_double)
 	btn_revive = _btn("Devam et +50 mermi (Reklam)", Color(0.85, 0.3, 0.6), rv, _on_revive)
 	btn_next = _btn("Sonraki", Color(0.1, 0.7, 0.45), rv, _on_next)
@@ -2173,7 +2267,7 @@ func _refresh_loadout() -> void:
 		var h := HBoxContainer.new()
 		h.add_theme_constant_override("separation", 16)
 		card_rows.add_child(h)
-		var l := _label("%s — %s" % [CARD_NAMES[ty], _card_desc(ty)], 32, h)
+		var l := _label("%s - %s" % [CARD_NAMES[ty], _card_desc(ty)], 32, h)
 		l.custom_minimum_size = Vector2(560, 0)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2188,7 +2282,7 @@ func _refresh_loadout() -> void:
 				b.disabled = coins < CARD_COST[ty]
 		else:
 			var cost := 80 * (int(card_lv[ty]) + 1)
-			b = _btn("Sv.%d → %d" % [int(card_lv[ty]) + 2, cost] if card_lv[ty] < 5 else "MAKS", Color(0.55, 0.2, 0.9), h, func() -> void: _up_card(tyy))
+			b = _btn("Sv.%d: %d coin" % [int(card_lv[ty]) + 2, cost] if card_lv[ty] < 5 else "MAKS", Color(0.55, 0.2, 0.9), h, func() -> void: _up_card(tyy))
 			b.disabled = coins < cost or card_lv[ty] >= 5
 		b.custom_minimum_size = Vector2(300, 90)
 		b.add_theme_font_size_override("font_size", 38)
@@ -2260,7 +2354,7 @@ func _show_daily() -> void:
 	dailyp.visible = true
 	nick_edit.text = nickname
 	var best: int = daily_best.get(daily_day, 0)
-	daily_info.text = "%s • Herkese aynı bölüm. Kaleyi EN AZ atışla yık!\nKartlar sabit: Savaşçı, Okçu, Savaşçı.  Senin en iyin: %s" % [daily_day, str(best) if best > 0 else "-"]
+	daily_info.text = "%s · Herkese aynı bölüm. Kaleyi EN AZ atışla yık!\nKartlar sabit: Savaşçı, Okçu, Savaşçı.  Senin en iyin: %s" % [daily_day, str(best) if best > 0 else "-"]
 	daily_list.text = "Türkiye sıralaması yükleniyor..."
 	_fetch_lb()
 
@@ -2304,7 +2398,7 @@ func _refresh_menu() -> void:
 		b.disabled = i >= unlocked
 		b.text = ("Bölüm %d" % (i + 1)) if i < unlocked else ("Bölüm %d  (kilitli)" % (i + 1))
 	var cost := _up_cost()
-	up_btn.text = "Atış Hızı Sv.%d  →  %d coin" % [rate_lv + 1, cost]
+	up_btn.text = "Atış Hızı Sv.%d: %d coin" % [rate_lv + 1, cost]
 	up_btn.disabled = coins < cost or rate_lv >= 10
 
 func _up_cost() -> int:
@@ -2656,7 +2750,7 @@ func _hitstop(final: bool) -> void:
 
 func _punch(a: float) -> void:
 	if cam == null: return
-	cam.fov = 64.0 - a
+	cam.fov = 64.0 - a * 0.4
 	var tw := create_tween().set_ignore_time_scale(true)
 	tw.tween_property(cam, "fov", 64.0, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
@@ -2943,9 +3037,10 @@ func _anim_win(st: int) -> void:
 			sfx("star", -6.0, 0.0, 0.1)
 			_vib(25))
 		tw.tween_property(p, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
-	var e := earned
-	var base := coins - earned
-	tw.tween_method(func(v: float) -> void: res_info.text = "+%d coin   (Toplam: %d)" % [int(v), base + int(v)], 0.0, float(e), 1.0)
+	var e := earned + kale_coins
+	var base := coins - e
+	var wl := win_lines
+	tw.tween_method(func(v: float) -> void: res_info.text = "%s = +%d coin\nToplam: %d" % [wl, int(v), base + int(v)], 0.0, float(e), 1.0)
 
 func _ok(name: String, cond: bool) -> void:
 	ft_res.append([name, cond])
@@ -2977,7 +3072,7 @@ func _flowtest(shot: String) -> void:
 	if bb: bb.pressed.emit()
 	await _wait(0.3)
 	_ok("okcu alindi, 100 coin dustu", owned[1] and coins == 900)
-	var ub := _find_btn(card_rows, "Sv.2 → 80")
+	var ub := _find_btn(card_rows, "Sv.2: 80")
 	if ub: ub.pressed.emit()
 	await _wait(0.3)
 	_ok("savasci Sv.2, 80 coin dustu", int(card_lv[0]) == 1 and coins == 820)
@@ -3046,4 +3141,36 @@ func _flowtest(shot: String) -> void:
 	for r in ft_res:
 		if not r[1]: fails += 1
 	print("FLOW DONE %d/%d ok" % [ft_res.size() - fails, ft_res.size()])
+	get_tree().quit()
+
+
+func _autoplay(lv: int) -> void:
+	hint_seen = lv > 0
+	owned = [true, true, false, false]; slots = [0, 0, 1] if lv >= 2 else [0, 0, 0]
+	var dir := "/workspace/riftrush-review/"
+	start_level(lv)
+	Engine.time_scale = 2.0
+	holding = true
+	var shot_i := 0
+	var t0 := Time.get_ticks_msec()
+	while playing:
+		await get_tree().process_frame
+		Engine.time_scale = 2.0
+		holding = true
+		var best := 99.0
+		var tx := 0.0
+		for g in gates:
+			if g["sec"] == sec and String(g["op"]).begins_with("x") and absf(g["z"]) < best:
+				best = absf(g["z"]); tx = g["cx"]
+		if ex.size() > 0 and randf() < 0.3:
+			var nz := -999.0
+			for j in ex.size():
+				if ez[j] > nz: nz = ez[j]; if nz > -12.0: tx = ex[j]
+		cannon_x = move_toward(cannon_x, tx, 0.25)
+		if (Time.get_ticks_msec() - t0) > 9000 * (shot_i + 1) and shot_i < 3:
+			shot_i += 1
+			get_viewport().get_texture().get_image().save_png(dir + "rr7-L%d-%d.png" % [lv + 1, shot_i])
+	print("AUTOPLAY level=%d result=%s time_left=%.1f ammo=%d sec=%d/%d" % [lv + 1, res_title.text, time_left, ammo, sec + 1, bases.size()])
+	await _wait(3.0)
+	get_viewport().get_texture().get_image().save_png(dir + "rr7-L%d-result.png" % (lv + 1))
 	get_tree().quit()
