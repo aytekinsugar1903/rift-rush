@@ -16,15 +16,31 @@ const LEVELS := [
 	{"ammo": 80, "time": 100.0, "sections": [
 		{"hp": 90, "spawn": 2.6, "brute": 0.0, "gates": [[-10.0, -2.2, 4.0, "x2", 0.0], [-10.0, 2.2, 4.0, "+10", 0.0], [-23.0, 0.0, 3.6, "x3", 1.4]]},
 		{"hp": 220, "spawn": 1.9, "brute": 0.1, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.4, "+10", 2.0], [-27.0, 0.0, 3.6, "x3", 1.2]]}]},
+	{"ammo": 90, "time": 110.0, "sections": [
+		{"hp": 150, "spawn": 1.8, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
+		{"hp": 320, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "kalkan", 0.0], [-18.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.2, 4.0, "x2", 0.0], [-27.0, 2.2, 4.0, "okcu", 0.0]]}]},
 	{"ammo": 100, "time": 120.0, "sections": [
-		{"hp": 160, "spawn": 1.8, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 280, "spawn": 1.4, "brute": 0.12, "gates": [[-8.0, 0.0, 3.2, "+10", 2.2], [-17.0, -2.2, 4.0, "x3", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-27.0, 0.0, 3.0, "-5", 2.4]]},
-		{"hp": 520, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x2", 0.0], [-18.0, 0.0, 3.2, "x3", 2.4], [-27.0, -2.8, 2.8, "x2", 0.0], [-27.0, 0.0, 2.8, "+10", 0.0], [-27.0, 2.8, 2.8, "-5", 0.0]]}]},
+		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
+		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
+	{"ammo": 110, "time": 130.0, "sections": [
+		{"hp": 260, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "okcu", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
+		{"hp": 450, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.6], [-27.0, -2.2, 4.0, "dev", 0.0], [-27.0, 2.2, 4.0, "x2", 0.0]]},
+		{"hp": 800, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x2", 0.0], [-18.0, 0.0, 3.2, "x3", 2.4], [-27.0, -2.8, 2.8, "okcu", 0.0], [-27.0, 0.0, 2.8, "dev", 0.0], [-27.0, 2.8, 2.8, "-5", 0.0]]}]},
 	{"ammo": 120, "time": 140.0, "sections": [
-		{"hp": 260, "spawn": 1.2, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "x2", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
-		{"hp": 480, "spawn": 0.9, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "x2", 2.6], [-27.0, -2.8, 2.8, "x2", 0.0], [-27.0, 0.0, 2.8, "-5", 1.0], [-27.0, 2.8, 2.8, "+10", 0.0]]},
-		{"hp": 1000, "spawn": 0.7, "brute": 0.3, "gates": [[-8.0, 0.0, 3.0, "x2", 2.6], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 4.0, "-5", 0.0], [-25.0, 0.0, 3.0, "x2", 2.4]]}]},
+		{"hp": 300, "spawn": 1.2, "brute": 0.15, "gates": [[-8.0, -2.8, 2.8, "x2", 0.0], [-8.0, 0.0, 2.8, "-5", 0.0], [-8.0, 2.8, 2.8, "x3", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.4], [-27.0, 0.0, 3.0, "dev", 2.0]]},
+		{"hp": 550, "spawn": 0.9, "brute": 0.22, "gates": [[-8.0, 0.0, 3.0, "x3", 2.6], [-17.0, -2.2, 4.0, "okcu", 0.0], [-17.0, 2.2, 4.0, "-5", 0.0], [-26.0, -2.2, 4.0, "x2", 0.0], [-26.0, 2.2, 4.0, "kalkan", 0.0]]},
+		{"hp": 950, "spawn": 0.75, "brute": 0.3, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "+10", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "okcu", 1.0], [-26.0, 2.8, 2.8, "-5", 0.0]]}]},
+	{"ammo": 130, "time": 150.0, "sections": [
+		{"hp": 350, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, 0.0, 3.0, "-5", 2.8], [-14.0, -2.2, 4.0, "x3", 0.0], [-14.0, 2.2, 4.0, "kalkan", 0.0], [-24.0, 0.0, 3.0, "dev", 2.2]]},
+		{"hp": 650, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "okcu", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "-5", 0.0], [-26.0, 0.0, 2.8, "kalkan", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]},
+		{"hp": 1200, "spawn": 0.65, "brute": 0.32, "gates": [[-8.0, 0.0, 3.0, "x2", 2.6], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 4.0, "-5", 0.0], [-25.0, -2.2, 4.0, "dev", 0.0], [-25.0, 2.2, 4.0, "okcu", 0.0]]}]},
 ]
+const CARD_NAMES := ["Savaşçı", "Okçu", "Dev", "Büyücü"]
+const CARD_REQ := [0, 3, 4, 6]       # gereken 'unlocked' (2. bolum bitince unlocked=3)
+const CARD_COST := [0, 100, 200, 350]
+const CARD_SPEED := [7.0, 6.0, 4.5, 6.5]
+const API := "https://riftrush-demo.aytekinsugar1903.workers.dev/api"
+
 
 const PORTAL_SHADER := """
 shader_type spatial;
@@ -141,6 +157,38 @@ var res_info: Label
 var btn_double: Button
 var btn_next: Button
 
+var cur_L: Dictionary = {}
+var daily := false
+var daily_day := ""
+var shots_fired := 0
+var revived := false
+var ptype := PackedInt32Array()
+var php := PackedInt32Array()
+var pcd := PackedFloat32Array()
+var blasts: Array = []
+var owned := [true, false, false, false]
+var card_lv := [0, 0, 0, 0]
+var slots := [0, 0, 0]
+var levels_since_ad := 0
+var nickname := ""
+var daily_best: Dictionary = {}
+var type_mm: Array = []
+var type_buf: Array = []
+var type_frames: Array = []
+var type_scale := [1.0, 1.0, 1.0, 1.0]
+var arrows: Array = []
+var arrow_i := 0
+var loadout: Control
+var slot_btns: Array = []
+var card_rows: VBoxContainer
+var lo_level := 0
+var dailyp: Control
+var daily_info: Label
+var daily_list: Label
+var nick_edit: LineEdit
+var btn_revive: Button
+var lb_http: HTTPRequest
+var post_http: HTTPRequest
 var bench := false
 var bench_len := 12.0
 var bench_shots: Array = []
@@ -165,6 +213,8 @@ func _ready() -> void:
 		if args.size() > 1: bench_len = float(args[1])
 		for k in range(2, args.size() - 1, 2):
 			bench_shots.append([float(args[k]), args[k + 1]])
+		owned = [true, true, true, true]
+		slots = [0, 1, 2]
 		start_level(int(OS.get_environment("BENCH_LEVEL")) if OS.get_environment("BENCH_LEVEL") != "" else 2)
 		ammo = 99999
 		rate_lv = 30
@@ -173,6 +223,18 @@ func _ready() -> void:
 		mb.pressed = true
 		mb.position = Vector2(540, 1200)
 		Input.parse_input_event(mb)
+	elif args.size() > 1 and args[0] == "loadoutshot":
+		coins = 420; unlocked = 4; owned = [true, true, false, false]; slots = [0, 0, 1]
+		_show_loadout(3)
+		await get_tree().create_timer(1.5).timeout
+		get_viewport().get_texture().get_image().save_png(args[1])
+		get_tree().quit()
+	elif args.size() > 1 and args[0] == "dailyshot":
+		nickname = "aytekin"
+		_show_daily()
+		await get_tree().create_timer(4.0).timeout
+		get_viewport().get_texture().get_image().save_png(args[1])
+		get_tree().quit()
 	elif args.size() > 1 and args[0] == "menushot":
 		await get_tree().create_timer(1.5).timeout
 		get_viewport().get_texture().get_image().save_png(args[1])
@@ -295,6 +357,8 @@ func _flatten(root: Node3D, bake := false) -> ArrayMesh:
 		for s in m.get_surface_count():
 			var st := SurfaceTool.new()
 			st.append_from(m, s, xf)
+			if absf(xf.basis.determinant() - 1.0) > 0.05:
+				st.generate_normals()
 			st.commit(out)
 			out.surface_set_material(out.get_surface_count() - 1, mi.get_active_material(s))
 	return out
@@ -402,6 +466,11 @@ func _bake_units() -> void:
 		frames_b.append(_flatten(bc, true))
 	bs = 2.3 / maxf(0.1, (frames_b[0] as ArrayMesh).get_aabb().size.y)
 	bc.queue_free()
+	var fa: Array = await _bake_frames("res://assets/blocky/character-a.glb", Color(0.55, 1.0, 0.6), "bow")
+	var fm: Array = await _bake_frames("res://assets/chars/character-male-b.glb", Color(0.85, 0.6, 1.0), "staff")
+	var fb: Array = await _bake_frames("res://assets/blocky/character-k.glb", Color(0.5, 0.9, 1.0), "")
+	type_frames = [[], fa, fb, fm]
+	type_scale = [1.0, 1.1 / maxf(0.1, (fa[0] as ArrayMesh).get_aabb().size.y), 1.35 / maxf(0.1, (fb[0] as ArrayMesh).get_aabb().size.y), 1.2 / maxf(0.1, (fm[0] as ArrayMesh).get_aabb().size.y)]
 
 const TEAM_SHADER := """
 shader_type spatial;
@@ -419,6 +488,63 @@ void fragment() {
 	RIM_TINT = 0.3;
 }
 """
+
+func _bake_frames(path: String, tint: Color, prop: String) -> Array:
+	var ch := _glb(path)
+	add_child(ch)
+	var ap: AnimationPlayer = ch.find_child("AnimationPlayer", true, false)
+	ap.play("sprint")
+	ap.speed_scale = 0.0
+	var L := ap.current_animation_length
+	var res: Array = []
+	var body_m: StandardMaterial3D = null
+	for f in NF:
+		ap.seek(L * f / NF, true)
+		await get_tree().process_frame
+		var m := _flatten(ch, true)
+		if path.contains("blocky"):
+			var m2 := ArrayMesh.new()
+			for si in m.get_surface_count():
+				var stn := SurfaceTool.new()
+				stn.create_from(m, si)
+				stn.deindex()
+				stn.set_smooth_group(-1)
+				stn.generate_normals()
+				stn.commit(m2)
+			m = m2
+		var ab := m.get_aabb()
+		var h := ab.size.y
+		if body_m == null:
+			var om := m.surface_get_material(0)
+			body_m = (om as StandardMaterial3D).duplicate() if om is StandardMaterial3D else StandardMaterial3D.new()
+			body_m.albedo_color = tint
+			if path.contains("blocky"):
+				body_m.albedo_texture = null
+				body_m.albedo_color = tint.darkened(0.25)
+			body_m.rim_enabled = true
+			body_m.rim = 0.3
+		for si in m.get_surface_count():
+			m.surface_set_material(si, body_m)
+		if prop == "bow":
+			var tor := TorusMesh.new(); tor.inner_radius = 0.27 * h; tor.outer_radius = 0.3 * h; tor.rings = 12; tor.ring_segments = 4
+			var st := SurfaceTool.new()
+			st.append_from(tor, 0, Transform3D(Basis(Vector3.BACK, PI * 0.5).scaled(Vector3(1, 1, 0.35)), Vector3(ab.position.x - 0.02 * h, h * 0.5, 0.05 * h)))
+			st.commit(m)
+			m.surface_set_material(m.get_surface_count() - 1, _mat(Color(0.55, 0.32, 0.15), 0.0))
+		elif prop == "staff":
+			var cy := CylinderMesh.new(); cy.top_radius = 0.025 * h; cy.bottom_radius = 0.03 * h; cy.height = 1.0 * h; cy.radial_segments = 6; cy.rings = 1
+			var st2 := SurfaceTool.new()
+			st2.append_from(cy, 0, Transform3D(Basis(), Vector3(ab.end.x + 0.03 * h, h * 0.5, 0.0)))
+			st2.commit(m)
+			m.surface_set_material(m.get_surface_count() - 1, _mat(Color(0.45, 0.28, 0.15), 0.0))
+			var sp := SphereMesh.new(); sp.radius = 0.09 * h; sp.height = 0.18 * h; sp.radial_segments = 8; sp.rings = 4
+			var st3 := SurfaceTool.new()
+			st3.append_from(sp, 0, Transform3D(Basis(), Vector3(ab.end.x + 0.03 * h, h * 1.02, 0.0)))
+			st3.commit(m)
+			m.surface_set_material(m.get_surface_count() - 1, _mat(Color(0.8, 0.4, 1.0), 3.0))
+		res.append(m)
+	ch.queue_free()
+	return res
 
 func _team_frames(tint: Color, shield_col: Color) -> Array:
 	var body := ShaderMaterial.new()
@@ -510,7 +636,7 @@ func _build_world() -> void:
 	env.glow_hdr_threshold = 1.6
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.92, 0.94, 1.0)
-	env.fog_density = 0.0025
+	env.fog_density = 0.0012
 	env.fog_sky_affect = 0.3
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -526,7 +652,7 @@ func _build_world() -> void:
 
 	cam = Camera3D.new()
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
-	cam.fov = 62
+	cam.fov = 64
 	cam.far = 260
 	add_child(cam)
 
@@ -615,6 +741,26 @@ func _build_world() -> void:
 	bmi.cast_shadow = shad
 	bmi.extra_cull_margin = 400.0
 	add_child(bmi)
+	type_mm = [null]
+	type_buf = [PackedFloat32Array()]
+	for ty in [1, 2, 3]:
+		var tm := MultiMesh.new()
+		tm.transform_format = MultiMesh.TRANSFORM_3D
+		tm.mesh = type_frames[ty][0]
+		tm.instance_count = 400
+		tm.visible_instance_count = 0
+		var tmi := MultiMeshInstance3D.new()
+		tmi.multimesh = tm
+		tmi.cast_shadow = shad
+		tmi.extra_cull_margin = 400.0
+		add_child(tmi)
+		type_mm.append(tm)
+		var tb := PackedFloat32Array(); tb.resize(400 * 12)
+		type_buf.append(tb)
+	var am := _mat(Color(1.0, 0.95, 0.6), 2.0)
+	for i in 24:
+		var ar := _box(Vector3(0.08, 0.08, 0.9), Vector3(0, -50, 0), am, self, false)
+		arrows.append(ar)
 	for team in 2:
 		var fm := MultiMesh.new()
 		fm.transform_format = MultiMesh.TRANSFORM_3D
@@ -667,8 +813,8 @@ func _build_island(total: float) -> void:
 	_box(Vector3(44, 0.6, total + 6), Vector3(0, -0.35, zc), _mat(Color(0.36, 0.72, 0.28), 0.0, 1.0, 0.0, 0.9), level_root, false)
 	_box(Vector3(42, 7, total + 4), Vector3(0, -4.0, zc), _mat(Color(0.5, 0.38, 0.28), 0.0, 1.0, 0.0, 1.0), level_root, false)
 	# yol (tas) + kenar
-	_box(Vector3(10.4, 0.3, total), Vector3(0, -0.12, zc), _mat(Color(0.62, 0.55, 0.45), 0.0, 1.0, 0.0, 0.85), level_root, false)
-	var tile := _mat(Color(0.55, 0.48, 0.4), 0.0, 1.0, 0.0, 0.85)
+	_box(Vector3(10.4, 0.3, total), Vector3(0, -0.12, zc), _mat(Color(0.78, 0.55, 0.36), 0.0, 1.0, 0.0, 0.85), level_root, false)
+	var tile := _mat(Color(0.7, 0.47, 0.3), 0.0, 1.0, 0.0, 0.85)
 	for k in int(total / 3.0):
 		_box(Vector3(9.8, 0.04, 1.4), Vector3(0, 0.04, z0 - 2.0 - k * 3.0), tile, level_root, false)
 	var edge := _mat(Color(0.62, 0.62, 0.66), 0.0, 1.0, 0.0, 0.7)
@@ -763,6 +909,10 @@ func pop_text(pos: Vector3, txt: String, c: Color, big := false) -> void:
 func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	var good: bool = not String(gd[3]).begins_with("-")
 	var col: Color = Color(0.15, 1.0, 0.45) if good else Color(1.0, 0.18, 0.28)
+	match gd[3]:
+		"okcu": col = Color(0.2, 0.75, 1.0)
+		"dev": col = Color(1.0, 0.6, 0.1)
+		"kalkan": col = Color(1.0, 0.85, 0.2)
 	var w: float = gd[2]
 	var n := Node3D.new()
 	n.position = Vector3(gd[1], 0, z_world)
@@ -776,7 +926,8 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	var pmat := _mat(col.lightened(0.15), 0.35, 1.0, 0.0, 0.25)
 	_box(Vector3(w - 0.4, 2.9, 0.12), Vector3(0, 1.5, 0), pmat, n, false)
 	var lb := Label3D.new()
-	lb.text = String(gd[3]).replace("x", "×")
+	lb.text = {"okcu": "OKÇU", "dev": "DEV\n10→1", "kalkan": "KALKAN\n+1"}.get(gd[3], String(gd[3]).replace("x", "×"))
+	if String(gd[3]).length() > 3: lb.font_size = 120
 	lb.font_size = 220
 	lb.pixel_size = 0.0105
 	lb.outline_size = 64
@@ -786,7 +937,17 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	lb.rotation_degrees = Vector3(-20, 0, 0)
 	n.add_child(lb)
 	var charge := 10 if gd[3] == "+10" else (5 if gd[3] == "-5" else 0)
-	return {"z": gd[0], "bx": gd[1], "cx": gd[1], "w": w, "op": gd[3], "amp": gd[4], "sec": si, "gi": gi,
+	var cl := Label3D.new()
+	cl.font = bold
+	cl.font_size = 150
+	cl.pixel_size = 0.009
+	cl.outline_size = 44
+	cl.modulate = Color(col.r, col.g, col.b, 0.0)
+	cl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	cl.no_depth_test = true
+	cl.position = Vector3(0, 4.4, 0)
+	n.add_child(cl)
+	return {"cl": cl, "tot": 0, "ct": 9.0, "cnt": 0, "z": gd[0], "bx": gd[1], "cx": gd[1], "w": w, "op": gd[3], "amp": gd[4], "sec": si, "gi": gi,
 		"charge": charge, "node": n, "pend": 0, "col": col, "ph": randf() * 6.0, "pmat": pmat}
 
 func _make_base(z_world: float, boss: bool) -> Dictionary:
@@ -842,12 +1003,39 @@ func _make_base(z_world: float, boss: bool) -> Dictionary:
 
 # ---------------- seviye ----------------
 func _clear_units() -> void:
-	px.clear(); pz.clear(); pdx.clear(); pmask.clear(); pa.clear(); fly.clear()
+	px.clear(); pz.clear(); pdx.clear(); pmask.clear(); pa.clear(); fly.clear(); ptype.clear(); php.clear(); pcd.clear(); blasts.clear()
 	ex.clear(); ez.clear(); ehp.clear(); esc.clear()
 
 func start_level(i: int) -> void:
+	daily = false
+	_start(LEVELS[i], i)
+
+func _daily_level() -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(daily_day)
+	var ops := ["x2", "x3", "+10", "-5", "okcu", "kalkan", "dev"]
+	var gs: Array = []
+	for row in 3:
+		var z := -8.0 - row * 9.0
+		if rng.randf() < 0.5:
+			gs.append([z, 0.0, 3.2, ops[rng.randi() % ops.size()], rng.randf_range(1.5, 2.6)])
+		else:
+			var a: String = ops[rng.randi() % ops.size()]
+			var b: String = ops[rng.randi() % ops.size()]
+			gs.append([z, -2.2, 4.0, a, 0.0]); gs.append([z, 2.2, 4.0, b, 0.0])
+	return {"ammo": 400, "time": 120.0, "sections": [{"hp": 260 + rng.randi() % 140, "spawn": rng.randf_range(1.0, 1.6), "brute": 0.12, "gates": gs}]}
+
+func start_daily() -> void:
+	daily = true
+	_start(_daily_level(), 0)
+
+func _start(L: Dictionary, i: int) -> void:
 	level = i
-	var L: Dictionary = LEVELS[i]
+	cur_L = L
+	shots_fired = 0
+	revived = false
+	dailyp.visible = false
+	loadout.visible = false
 	_clear_units()
 	for c in level_root.get_children():
 		c.queue_free()
@@ -877,33 +1065,46 @@ func start_level(i: int) -> void:
 	hud.visible = true
 	_build_sec_bars(secs.size())
 	_update_titles()
-	cam.position = Vector3(0, 10.5, 12.0)
+	cam.position = Vector3(0, 15.0, 13.0)
 	cam_push = 0.0
 	if not hint_seen:
 		hint.visible = true
 		drag_sum = 0.0
 
 func _setup_section() -> void:
-	var S: Dictionary = LEVELS[level]["sections"][sec]
+	var S: Dictionary = cur_L["sections"][sec]
 	base_max = S["hp"]
 	base_hp = base_max
 	spawn_t = 2.0
 
 func _update_titles() -> void:
-	var n: int = LEVELS[level]["sections"].size()
+	var n: int = cur_L["sections"].size()
+	if daily:
+		lbl_level.text = "GÜNLÜK • %s • %d atış" % [daily_day, shots_fired]
+		return
 	lbl_level.text = "BÖLÜM %d • %s" % [level + 1, "BOSS" if sec == n - 1 else "KALE %d/%d" % [sec + 1, n]]
 
 func _fire_rate() -> float:
 	return 6.0 + rate_lv * 1.5
 
-func _add_p(x: float, z: float, dx: float, mask: int) -> void:
+func _lv(ty: int) -> int:
+	return 0 if daily else int(card_lv[ty])
+
+func _base_hp(ty: int) -> int:
+	match ty:
+		0: return 1 + _lv(0) / 2
+		2: return 6 + 2 * _lv(2)
+	return 1
+
+func _add_p(x: float, z: float, dx: float, mask: int, ty := 0, hp := -1) -> void:
 	if px.size() >= MAXP: return
 	px.append(x); pz.append(z); pdx.append(dx); pmask.append(mask); pa.append(0.0)
+	ptype.append(ty); php.append(hp if hp > 0 else _base_hp(ty)); pcd.append(randf() * 0.5)
 
 func _kill_p(i: int) -> void:
 	var l := px.size() - 1
-	px[i] = px[l]; pz[i] = pz[l]; pdx[i] = pdx[l]; pmask[i] = pmask[l]; pa[i] = pa[l]
-	px.resize(l); pz.resize(l); pdx.resize(l); pmask.resize(l); pa.resize(l)
+	px[i] = px[l]; pz[i] = pz[l]; pdx[i] = pdx[l]; pmask[i] = pmask[l]; pa[i] = pa[l]; ptype[i] = ptype[l]; php[i] = php[l]; pcd[i] = pcd[l]
+	px.resize(l); pz.resize(l); pdx.resize(l); pmask.resize(l); pa.resize(l); ptype.resize(l); php.resize(l); pcd.resize(l)
 
 func _kill_e(j: int) -> void:
 	var l := ex.size() - 1
@@ -934,6 +1135,12 @@ func _process(dt: float) -> void:
 	for b in bases:
 		(b["rift"] as Node3D).rotation.y += dt * 1.5
 	ring.rotation.y += dt * 3.0
+	for g in gates:
+		g["ct"] += dt
+		if g["ct"] > 0.9:
+			var cl: Label3D = g["cl"]
+			cl.modulate.a = maxf(0.0, cl.modulate.a - dt * 2.5)
+			if cl.modulate.a <= 0.0: g["tot"] = 0
 	if bench:
 		ft.append(dt)
 		var mm := InputEventMouseMotion.new()
@@ -969,10 +1176,10 @@ func _process(dt: float) -> void:
 	# kamera: topun arkasi, alcak acı, ordu ilerledikce ileri itilir
 	cam_push = lerpf(cam_push, clampf(-front * 0.12, 0.0, 3.5), minf(1.0, dt * 2.0))
 	var cz := cannon.position.z
-	var target := Vector3(barrel.position.x * 0.35, 13.5, cz + 9.0 - cam_push)
+	var target := Vector3(barrel.position.x * 0.35, 15.0, cz + 13.0 - cam_push)
 	cam.position = cam.position.lerp(target, minf(1.0, dt * 4.0))
 	var sh := trauma * trauma * 0.5
-	cam.look_at(Vector3(barrel.position.x * 0.2, 0, cam.position.z - 20.0) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
+	cam.look_at(Vector3(barrel.position.x * 0.2, 0, cam.position.z - 21.0) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
 	var t0 := Time.get_ticks_usec()
 	if playing and not advancing:
 		_sim(dt)
@@ -980,14 +1187,17 @@ func _process(dt: float) -> void:
 	if bench: cpu_us.append(Time.get_ticks_usec() - t0)
 
 func _sim(dt: float) -> void:
-	var S: Dictionary = LEVELS[level]["sections"][sec]
+	var S: Dictionary = cur_L["sections"][sec]
 	time_left -= dt
 	if holding and ammo > 0:
 		fire_acc += dt * _fire_rate()
 		while fire_acc >= 1.0 and ammo > 0:
 			fire_acc -= 1.0
 			ammo -= 1
-			_add_p(barrel.position.x + randf_range(-0.2, 0.2), -1.0, randf_range(-0.6, 0.6), 0)
+			var ty: int = ([0, 1, 0] if daily else slots)[shots_fired % 3]
+			shots_fired += 1
+			if daily and shots_fired % 5 == 0: _update_titles()
+			_add_p(barrel.position.x + randf_range(-0.2, 0.2), -1.0, randf_range(-0.6, 0.6), 0, ty)
 			barrel.position.z = 0.35
 			sfx("shot", -10.0, 0.07)
 			dust_t -= 1.0
@@ -1010,7 +1220,27 @@ func _sim(dt: float) -> void:
 	front = 0.0
 	for i in range(n0 - 1, -1, -1):
 		var z0: float = pz[i]
-		var z1: float = z0 - PSPEED * dt
+		var ty: int = ptype[i]
+		var z1: float = z0 - CARD_SPEED[ty] * dt
+		if ty == 1:
+			z1 = maxf(z1, BASE_Z + 9.0)
+			pcd[i] -= dt
+			if pcd[i] <= 0.0:
+				pcd[i] = maxf(0.35, 0.9 - 0.08 * _lv(1))
+				var tj := -1
+				var best := 49.0
+				for j in ex.size():
+					var dz: float = z1 - ez[j]
+					if dz > -1.0 and dz < 7.0:
+						var dd: float = dz * dz + (ex[j] - px[i]) * (ex[j] - px[i])
+						if dd < best:
+							best = dd; tj = j
+				if tj >= 0:
+					ehp[tj] -= 1
+					_arrow(Vector3(px[i], 1.0, z1 + sec_off), Vector3(ex[tj], 0.8, ez[tj] + sec_off))
+				elif z1 <= BASE_Z + 9.5:
+					base_hits += 1
+					_arrow(Vector3(px[i], 1.0, z1 + sec_off), Vector3(randf_range(-2.5, 2.5), 2.5, BASE_Z + 1.5 + sec_off))
 		var x: float = px[i] + pdx[i] * dt
 		if z1 < -29.0:
 			x = lerpf(x, clampf(x, -2.8, 2.8), dt * 3.0)
@@ -1022,7 +1252,12 @@ func _sim(dt: float) -> void:
 		pa[i] += dt
 		front = minf(front, z1)
 		if z1 <= BASE_Z + 1.8:
-			base_hits += 1
+			match ty:
+				2: base_hits += 8 + 2 * _lv(2)
+				3:
+					base_hits += 5 + _lv(3)
+					burst(Vector3(x, 1.5, BASE_Z + 2.0 + sec_off), PURPLE, 24)
+				_: base_hits += 1
 			_kill_p(i)
 			continue
 		var killed := false
@@ -1034,14 +1269,28 @@ func _sim(dt: float) -> void:
 				var m := pmask[i]
 				match g["op"]:
 					"x2":
-						_add_p(x + randf_range(-0.5, 0.5), z1 - 0.3, randf_range(-0.8, 0.8), m); g["pend"] += 1
+						_add_p(x + randf_range(-0.5, 0.5), z1 - 0.3, randf_range(-0.8, 0.8), m, ty, php[i]); g["pend"] += 1
 					"x3":
-						for k in 2: _add_p(x + randf_range(-0.6, 0.6), z1 - 0.3 - 0.3 * k, randf_range(-0.9, 0.9), m)
+						for k in 2: _add_p(x + randf_range(-0.6, 0.6), z1 - 0.3 - 0.3 * k, randf_range(-0.9, 0.9), m, ty, php[i])
 						g["pend"] += 2
 					"+10":
 						if g["charge"] > 0:
 							g["charge"] -= 1
-							_add_p(x + randf_range(-0.6, 0.6), z1 - 0.4, randf_range(-0.9, 0.9), m); g["pend"] += 1
+							_add_p(x + randf_range(-0.6, 0.6), z1 - 0.4, randf_range(-0.9, 0.9), m, ty, php[i]); g["pend"] += 1
+					"okcu":
+						if ty == 0:
+							ptype[i] = 1; php[i] = 1; g["pend"] += 1
+					"kalkan":
+						if php[i] < 4:
+							php[i] += 1; g["pend"] += 1
+					"dev":
+						if ty != 2:
+							g["cnt"] += 1
+							killed = true
+							if g["cnt"] >= 10:
+								g["cnt"] = 0
+								_add_p(x, z1 - 0.5, 0.0, m, 2)
+								g["pend"] += 1
 					"-5":
 						if g["charge"] > 0:
 							g["charge"] -= 1
@@ -1058,7 +1307,18 @@ func _sim(dt: float) -> void:
 			var pnd: int = g["pend"]
 			if pnd != 0:
 				var nd: Node3D = g["node"]
-				pop_text(nd.position + Vector3(randf_range(-0.6, 0.6), 3.8, 0), ("+%d" % pnd) if pnd > 0 else str(pnd), g["col"], absi(pnd) > 8)
+				g["tot"] += pnd
+				g["ct"] = 0.0
+				var cl: Label3D = g["cl"]
+				var tot: int = g["tot"]
+				match g["op"]:
+					"okcu": cl.text = "%d OKÇU" % tot
+					"kalkan": cl.text = "%d KALKAN" % tot
+					"dev": cl.text = "+%d DEV" % tot
+					_: cl.text = ("+%d" % tot) if tot >= 0 else str(tot)
+				cl.modulate.a = 1.0
+				cl.scale = Vector3.ONE * 1.35
+				create_tween().tween_property(cl, "scale", Vector3.ONE, 0.15)
 				nd.scale = Vector3(1.12, 1.12, 1.12)
 				create_tween().tween_property(nd, "scale", Vector3.ONE, 0.14)
 				var pm: StandardMaterial3D = g["pmat"]
@@ -1129,8 +1389,18 @@ func _sim(dt: float) -> void:
 				var ddx: float = px[idx] - exj
 				var ddz: float = pz[idx] - ezj
 				if ddx * ddx + ddz * ddz < r2:
+					var pty: int = ptype[idx]
+					if pty == 3:
+						blasts.append(Vector2(px[idx], pz[idx]))
+						dead[idx] = 1
+						hp -= 2
+						continue
+					hp -= 3 if pty == 2 else 1
+					php[idx] -= 1
+					if php[idx] > 0:
+						if hp <= 0: break
+						continue
 					dead[idx] = 1
-					hp -= 1
 					_fly(px[idx], pz[idx], 0)
 					if spark_n < 3:
 						spark_n += 1
@@ -1149,6 +1419,23 @@ func _sim(dt: float) -> void:
 	for i in range(np - 1, -1, -1):
 		if dead[i] == 1:
 			_kill_p(i)
+	for bl: Vector2 in blasts:
+		var rr := 2.0 + 0.3 * _lv(3)
+		burst(Vector3(bl.x, 1.0, bl.y + sec_off), PURPLE, 30)
+		burst(Vector3(bl.x, 0.5, bl.y + sec_off), Color(1, 0.6, 1), 20)
+		sfx("explode", -12.0, 0.1)
+		for j in range(ex.size() - 1, -1, -1):
+			if Vector2(ex[j], ez[j]).distance_squared_to(bl) < rr * rr:
+				ehp[j] -= 3
+				if ehp[j] <= 0:
+					if esc[j] < 1.5: _fly(ex[j], ez[j], 1)
+					_kill_e(j)
+	blasts.clear()
+	for j in range(ex.size() - 1, -1, -1):
+		if ehp[j] <= 0:
+			burst(Vector3(ex[j], 0.8, ez[j] + sec_off), ENEMY, 12)
+			if esc[j] < 1.5: _fly(ex[j], ez[j], 1)
+			_kill_e(j)
 	lbl_time.text = "%d" % ceili(maxf(0.0, time_left))
 	lbl_ammo.text = "%d" % ammo
 	lbl_units.text = "%d" % px.size()
@@ -1163,6 +1450,15 @@ func _sim(dt: float) -> void:
 		end_grace += dt
 		if end_grace > 0.6:
 			_lose("Ordun tükendi!")
+
+func _arrow(a: Vector3, b: Vector3) -> void:
+	var ar: MeshInstance3D = arrows[arrow_i]
+	arrow_i = (arrow_i + 1) % arrows.size()
+	ar.position = a
+	ar.look_at_from_position(a, b, Vector3.UP)
+	var tw := create_tween()
+	tw.tween_property(ar, "position", b, 0.2)
+	tw.tween_callback(func() -> void: ar.position.y = -50.0)
 
 func _fly(x: float, z: float, team: int) -> void:
 	if fly.size() >= 300 * 8: return
@@ -1211,8 +1507,11 @@ func _render() -> void:
 		var k := 0
 		var i := g
 		while i < n:
+			if ptype[i] != 0:
+				i += NF
+				continue
 			var o := k * 12
-			var sc := S * minf(1.0, 0.25 + pa[i] * 6.0)
+			var sc := S * minf(1.0, 0.25 + pa[i] * 6.0) * (1.0 + 0.08 * float(php[i] - 1 - _lv(0) / 2))
 			b[o] = -sc; b[o + 5] = sc; b[o + 10] = -sc
 			b[o + 3] = px[i]; b[o + 7] = 0.05; b[o + 11] = pz[i] + sec_off
 			k += 1
@@ -1246,6 +1545,25 @@ func _render() -> void:
 		mm.buffer = b
 		mm.visible_instance_count = k
 		ebufs[g] = b
+	var tcount := [0, 0, 0, 0]
+	var fr := int(t * 14.0) % NF
+	for i in n:
+		var ty: int = ptype[i]
+		if ty == 0: continue
+		var c: int = tcount[ty]
+		if c >= 400: continue
+		var tb: PackedFloat32Array = type_buf[ty]
+		var o := c * 12
+		var sc: float = type_scale[ty] * minf(1.0, 0.25 + pa[i] * 6.0) * (1.0 + 0.08 * float(php[i] - 1) if ty != 2 else 1.0)
+		tb[o] = -sc; tb[o + 5] = sc; tb[o + 10] = -sc
+		tb[o + 3] = px[i]; tb[o + 7] = 0.05; tb[o + 11] = pz[i] + sec_off
+		type_buf[ty] = tb
+		tcount[ty] = c + 1
+	for ty in [1, 2, 3]:
+		var tm: MultiMesh = type_mm[ty]
+		tm.mesh = type_frames[ty][(fr + ty) % NF]
+		tm.buffer = type_buf[ty]
+		tm.visible_instance_count = tcount[ty]
 	brute_mm.mesh = frames_b[int(t * 10.0) % NF]
 	brute_mm.buffer = brute_buf
 	brute_mm.visible_instance_count = nb
@@ -1284,9 +1602,27 @@ func _win() -> void:
 	sfx("win", -2.0, 0.0, 0.0)
 	playing = false
 	holding = false
+	if daily:
+		var prev: int = daily_best.get(daily_day, 0)
+		if prev == 0 or shots_fired < prev:
+			daily_best[daily_day] = shots_fired
+		earned = 60
+		coins += earned
+		_save()
+		_post_score(shots_fired)
+		await get_tree().create_timer(1.0).timeout
+		res_title.text = "ZAFER!"
+		res_title.modulate = CYAN
+		res_info.text = "%d atışla yıktın!\nBugünkü en iyin: %d   (+%d coin)" % [shots_fired, daily_best[daily_day], earned]
+		btn_double.visible = false
+		btn_revive.visible = false
+		btn_next.text = "Sıralama"
+		_show_result()
+		return
 	earned = 40 + 30 * (level + 1) + mini(ammo, 150) + int(time_left)
 	coins += earned
 	doubled = false
+	levels_since_ad += 1
 	if level + 1 < LEVELS.size():
 		unlocked = maxi(unlocked, level + 2)
 	_save()
@@ -1297,6 +1633,7 @@ func _win() -> void:
 	btn_double.visible = true
 	btn_next.text = "Sonraki Bölüm" if level + 1 < LEVELS.size() else "Menü"
 	btn_next.visible = true
+	btn_revive.visible = false
 	_show_result()
 
 func _lose(why: String) -> void:
@@ -1307,6 +1644,7 @@ func _lose(why: String) -> void:
 	res_title.modulate = ENEMY
 	res_info.text = why
 	btn_double.visible = false
+	btn_revive.visible = not revived
 	btn_next.text = "Tekrar Dene"
 	btn_next.visible = true
 	_show_result()
@@ -1327,21 +1665,48 @@ func _on_double() -> void:
 			res_info.text = "+%d coin (2×)   (Toplam: %d)" % [earned * 2, coins]
 			btn_double.visible = false)
 
+func _maybe_interstitial(then: Callable) -> void:
+	# adil reklam: ilk 3 bolumde asla, sonra en fazla 3 bolumde bir
+	if level >= 3 and levels_since_ad >= 3:
+		levels_since_ad = 0
+		_save()
+		Ads.show_interstitial(then)
+	else:
+		then.call()
+
+func _on_revive() -> void:
+	Ads.show_rewarded(func(ok: bool) -> void:
+		if ok:
+			revived = true
+			ammo += 50
+			time_left = maxf(time_left, 25.0)
+			end_grace = 0.0
+			result.visible = false
+			hud.visible = true
+			playing = true)
+
 func _on_next() -> void:
+	if daily:
+		_show_daily()
+		return
 	if res_title.text == "ZAFER!":
 		if level + 1 < LEVELS.size():
 			var nxt := level + 1
-			Ads.show_interstitial(func() -> void: start_level(nxt))
+			_maybe_interstitial(func() -> void: _show_loadout(nxt))
 		else:
-			Ads.show_interstitial(_show_menu)
+			_maybe_interstitial(_show_menu)
+	elif daily:
+		start_daily()
 	else:
-		start_level(level)
+		_start(cur_L, level)
 
 func _show_menu() -> void:
 	playing = false
 	_clear_units()
 	result.visible = false
 	hud.visible = false
+	loadout.visible = false
+	dailyp.visible = false
 	menu.visible = true
 	_refresh_menu()
 
@@ -1459,20 +1824,32 @@ func _build_ui() -> void:
 
 	var mv := _panel(cl)
 	menu = mv.get_parent().get_parent()
-	_label("RIFT RUSH", 150, mv, CYAN)
-	_label("Yarıktan gelen orduyu durdur!", 46, mv, Color(0.85, 0.75, 1))
+	_label("RIFT RUSH", 130, mv, CYAN)
+	_label("Ordunu kur, yarığı kapat!", 44, mv, Color(0.85, 0.75, 1))
 	lbl_coins = _label("", 60, mv, Color(1, 0.85, 0.2))
 	for i in LEVELS.size():
 		var idx := i
-		lvl_btns.append(_btn("", Color(0.1, 0.55, 0.85), mv, func() -> void: start_level(idx)))
+		lvl_btns.append(_btn("", Color(0.1, 0.55, 0.85), mv, func() -> void: _show_loadout(idx)))
+		(lvl_btns[i] as Button).custom_minimum_size = Vector2(720, 100)
 	up_btn = _btn("", Color(0.55, 0.2, 0.9), mv, _on_upgrade)
-	_label("Sürükle: nişan al  •  Basılı tut: ateş", 38, mv, Color(1, 1, 1, 0.7))
+	up_btn.custom_minimum_size = Vector2(720, 100)
+	_btn("Günlük Meydan Okuma", Color(0.95, 0.55, 0.1), mv, _show_daily)
+	var badge := PanelContainer.new()
+	var bsb := StyleBoxFlat.new(); bsb.bg_color = Color(0.1, 0.6, 0.3, 0.9); bsb.set_corner_radius_all(30)
+	bsb.content_margin_left = 24; bsb.content_margin_right = 24; bsb.content_margin_top = 6; bsb.content_margin_bottom = 6
+	badge.add_theme_stylebox_override("panel", bsb)
+	badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	mv.add_child(badge)
+	_label("Zorla reklam yok", 38, badge)
+	_build_loadout(cl)
+	_build_daily(cl)
 
 	var rv := _panel(cl)
 	result = rv.get_parent().get_parent()
 	res_title = _label("", 140, rv)
 	res_info = _label("", 56, rv, Color(1, 0.85, 0.2))
 	btn_double = _btn("2× Coin  (Reklam izle)", Color(0.95, 0.6, 0.1), rv, _on_double)
+	btn_revive = _btn("Devam et +50 mermi (Reklam)", Color(0.85, 0.3, 0.6), rv, _on_revive)
 	btn_next = _btn("Sonraki", Color(0.1, 0.7, 0.45), rv, _on_next)
 	_btn("Menü", Color(0.3, 0.3, 0.5), rv, _show_menu)
 	result.visible = false
@@ -1538,6 +1915,182 @@ func _build_sec_bars(n: int) -> void:
 		sec_box.add_child(pb)
 		sec_bars.append(pb)
 
+func _build_loadout(cl: Node) -> void:
+	var v := _panel(cl)
+	loadout = v.get_parent().get_parent()
+	v.add_theme_constant_override("separation", 22)
+	_label("ORDUNU KUR", 100, v, CYAN)
+	_label("Top sırayla bu 3 kartı atar (dokun: değiştir)", 36, v, Color(1, 1, 1, 0.8))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 18)
+	v.add_child(row)
+	for k in 3:
+		var kk := k
+		var b := _btn("", Color(0.15, 0.4, 0.8), row, func() -> void: _cycle_slot(kk))
+		b.custom_minimum_size = Vector2(300, 200)
+		slot_btns.append(b)
+	card_rows = VBoxContainer.new()
+	card_rows.add_theme_constant_override("separation", 14)
+	v.add_child(card_rows)
+	_btn("SAVAŞA BAŞLA", Color(0.1, 0.7, 0.45), v, func() -> void: start_level(lo_level))
+	_btn("Geri", Color(0.3, 0.3, 0.5), v, _show_menu).custom_minimum_size = Vector2(720, 90)
+	loadout.visible = false
+
+func _card_desc(ty: int) -> String:
+	return ["Kılıç + kalkan, dengeli", "Uzaktan ok atar, kırılgan", "Yavaş, dayanıklı, kaleye çok vurur", "Temasta alan patlaması"][ty]
+
+func _show_loadout(i: int) -> void:
+	lo_level = i
+	menu.visible = false
+	result.visible = false
+	hud.visible = false
+	loadout.visible = true
+	_refresh_loadout()
+
+func _cycle_slot(k: int) -> void:
+	var cur: int = slots[k]
+	for step in range(1, 5):
+		var nx := (cur + step) % 4
+		if owned[nx]:
+			slots[k] = nx
+			break
+	_save()
+	_refresh_loadout()
+
+func _refresh_loadout() -> void:
+	var cols := [Color(0.15, 0.55, 0.9), Color(0.15, 0.7, 0.4), Color(0.9, 0.5, 0.1), Color(0.6, 0.3, 0.9)]
+	for k in 3:
+		var b: Button = slot_btns[k]
+		var ty: int = slots[k]
+		b.text = "%d. %s\nSv.%d" % [k + 1, CARD_NAMES[ty], int(card_lv[ty]) + 1]
+		b.add_theme_stylebox_override("normal", _style(cols[ty]))
+		b.add_theme_stylebox_override("hover", _style(cols[ty].lightened(0.15)))
+		b.add_theme_font_size_override("font_size", 44)
+	for c in card_rows.get_children():
+		c.queue_free()
+	var cl := _label("Coin: %d" % coins, 50, card_rows, Color(1, 0.85, 0.2))
+	cl.name = "coins"
+	for ty in 4:
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override("separation", 16)
+		card_rows.add_child(h)
+		var l := _label("%s — %s" % [CARD_NAMES[ty], _card_desc(ty)], 32, h)
+		l.custom_minimum_size = Vector2(560, 0)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var tyy := ty
+		var b: Button
+		if not owned[ty]:
+			if unlocked < CARD_REQ[ty]:
+				b = _btn("Bölüm %d sonrası" % (CARD_REQ[ty] - 1), Color(0.3, 0.3, 0.38), h, func() -> void: pass)
+				b.disabled = true
+			else:
+				b = _btn("Aç: %d" % CARD_COST[ty], Color(0.9, 0.6, 0.1), h, func() -> void: _buy_card(tyy))
+				b.disabled = coins < CARD_COST[ty]
+		else:
+			var cost := 80 * (int(card_lv[ty]) + 1)
+			b = _btn("Sv.%d → %d" % [int(card_lv[ty]) + 2, cost] if card_lv[ty] < 5 else "MAKS", Color(0.55, 0.2, 0.9), h, func() -> void: _up_card(tyy))
+			b.disabled = coins < cost or card_lv[ty] >= 5
+		b.custom_minimum_size = Vector2(300, 90)
+		b.add_theme_font_size_override("font_size", 38)
+
+func _buy_card(ty: int) -> void:
+	if coins >= CARD_COST[ty] and not owned[ty]:
+		coins -= CARD_COST[ty]
+		owned[ty] = true
+		_save()
+		_refresh_loadout()
+
+func _up_card(ty: int) -> void:
+	var cost := 80 * (int(card_lv[ty]) + 1)
+	if coins >= cost and card_lv[ty] < 5:
+		coins -= cost
+		card_lv[ty] = int(card_lv[ty]) + 1
+		_save()
+		_refresh_loadout()
+
+func _today() -> String:
+	var d := Time.get_datetime_dict_from_unix_time(int(Time.get_unix_time_from_system()) + 3 * 3600)
+	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
+
+func _build_daily(cl: Node) -> void:
+	var v := _panel(cl)
+	dailyp = v.get_parent().get_parent()
+	v.add_theme_constant_override("separation", 24)
+	_label("GÜNLÜK MEYDAN OKUMA", 80, v, Color(1, 0.75, 0.2))
+	daily_info = _label("", 40, v)
+	daily_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	daily_info.custom_minimum_size = Vector2(900, 0)
+	nick_edit = LineEdit.new()
+	nick_edit.placeholder_text = "Takma ad (2-16 harf)"
+	nick_edit.max_length = 16
+	nick_edit.custom_minimum_size = Vector2(720, 100)
+	nick_edit.add_theme_font_size_override("font_size", 46)
+	nick_edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nick_edit.text_changed.connect(func(tx: String) -> void:
+		nickname = tx.strip_edges()
+		_save())
+	v.add_child(nick_edit)
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new(); sb.bg_color = Color(0.08, 0.1, 0.25, 0.85); sb.set_corner_radius_all(30)
+	sb.content_margin_left = 30; sb.content_margin_right = 30; sb.content_margin_top = 20; sb.content_margin_bottom = 20
+	pc.add_theme_stylebox_override("panel", sb)
+	pc.custom_minimum_size = Vector2(900, 700)
+	v.add_child(pc)
+	daily_list = Label.new()
+	daily_list.add_theme_font_size_override("font_size", 36)
+	daily_list.add_theme_font_override("font", bold)
+	pc.add_child(daily_list)
+	_btn("OYNA", Color(0.1, 0.7, 0.45), v, start_daily)
+	_btn("Geri", Color(0.3, 0.3, 0.5), v, _show_menu).custom_minimum_size = Vector2(720, 90)
+	dailyp.visible = false
+	lb_http = HTTPRequest.new()
+	add_child(lb_http)
+	lb_http.request_completed.connect(_on_lb)
+	post_http = HTTPRequest.new()
+	add_child(post_http)
+	post_http.request_completed.connect(func(_r: int, _c: int, _h: PackedStringArray, _b: PackedByteArray) -> void: _fetch_lb())
+
+func _show_daily() -> void:
+	daily_day = _today()
+	menu.visible = false
+	result.visible = false
+	hud.visible = false
+	loadout.visible = false
+	dailyp.visible = true
+	nick_edit.text = nickname
+	var best: int = daily_best.get(daily_day, 0)
+	daily_info.text = "%s • Herkese aynı bölüm. Kaleyi EN AZ atışla yık!\nKartlar sabit: Savaşçı, Okçu, Savaşçı.  Senin en iyin: %s" % [daily_day, str(best) if best > 0 else "-"]
+	daily_list.text = "Türkiye sıralaması yükleniyor..."
+	_fetch_lb()
+
+func _fetch_lb() -> void:
+	lb_http.cancel_request()
+	lb_http.request(API + "/daily?day=" + daily_day)
+
+func _on_lb(_r: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
+	if code != 200:
+		daily_list.text = "Sıralama şu an alınamadı."
+		return
+	var data = JSON.parse_string(body.get_string_from_utf8())
+	if typeof(data) != TYPE_ARRAY or data.size() == 0:
+		daily_list.text = "TÜRKİYE SIRALAMASI (bugün)\n\nHenüz skor yok — ilk sen ol!"
+		return
+	var lines := ["TÜRKİYE SIRALAMASI (bugün)  — az atış = iyi", ""]
+	var i := 1
+	for row in data:
+		if i > 12: break
+		lines.append("%2d. %-16s %4d atış" % [i, str(row["nick"]), int(row["score"])])
+		i += 1
+	daily_list.text = "\n".join(lines)
+
+func _post_score(score: int) -> void:
+	if nickname.length() < 2: return
+	var body := JSON.stringify({"day": daily_day, "nick": nickname, "score": score})
+	post_http.cancel_request()
+	post_http.request(API + "/score", ["Content-Type: application/json"], HTTPClient.METHOD_POST, body)
+
 func _refresh_menu() -> void:
 	lbl_coins.text = "Coin: %d" % coins
 	for i in lvl_btns.size():
@@ -1565,6 +2118,12 @@ func _save() -> void:
 	c.set_value("p", "unlocked", unlocked)
 	c.set_value("p", "rate_lv", rate_lv)
 	c.set_value("p", "hint", hint_seen)
+	c.set_value("p", "owned", owned)
+	c.set_value("p", "card_lv", card_lv)
+	c.set_value("p", "slots", slots)
+	c.set_value("p", "ads_n", levels_since_ad)
+	c.set_value("p", "nick", nickname)
+	c.set_value("p", "daily_best", daily_best)
 	c.save("user://save.cfg")
 
 func _load() -> void:
@@ -1574,6 +2133,12 @@ func _load() -> void:
 		unlocked = c.get_value("p", "unlocked", 1)
 		rate_lv = c.get_value("p", "rate_lv", 0)
 		hint_seen = c.get_value("p", "hint", false)
+		owned = c.get_value("p", "owned", owned)
+		card_lv = c.get_value("p", "card_lv", card_lv)
+		slots = c.get_value("p", "slots", slots)
+		levels_since_ad = c.get_value("p", "ads_n", 0)
+		nickname = c.get_value("p", "nick", "")
+		daily_best = c.get_value("p", "daily_best", {})
 
 func _bench_report() -> void:
 	var a: Array = ft.slice(int(ft.size() * 0.15))

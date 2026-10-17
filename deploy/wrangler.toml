@@ -6,3 +6,8 @@ compatibility_date = "2026-10-14"
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "riftrush-lb"
+database_id = "9f3895b8-4fa9-46c1-9083-806ead9b55e6"
