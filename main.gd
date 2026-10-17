@@ -1,5 +1,5 @@
 extends Node3D
-## Rift Rush - MVP v2 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
+## Rift Rush - v8 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
 
 const LANE := 4.4
 const BASE_Z := -38.0
@@ -23,12 +23,12 @@ var is_low := false
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 120, "time": 120.0, "sections": [
-		{"hp": 60, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.2, 4.0, "x2", 0.0], [-10.0, 2.2, 4.0, "+10", 0.0], [-23.0, 0.0, 3.6, "x3", 1.4]]},
-		{"hp": 150, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.4, "+10", 2.0], [-27.0, 0.0, 3.6, "x3", 1.2]]}]},
-	{"ammo": 120, "time": 120.0, "sections": [
-		{"hp": 130, "spawn": 2.2, "brute": 0.04, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 240, "spawn": 1.7, "brute": 0.08, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
+	{"ammo": 190, "time": 120.0, "sections": [
+		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
+		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
+	{"ammo": 170, "time": 120.0, "sections": [
+		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
+		{"hp": 540, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
 	{"ammo": 100, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
@@ -130,6 +130,15 @@ var cam_push := 0.0
 var flash_t := 0.0
 var hint_seen := false
 var drag_sum := 0.0
+var hint_fire_t := 0.0
+var hint_t := 0.0
+var test_run := false
+var posts_sent := 0
+var res_btns: Array = []
+var res_lock_id := 0
+var ammo_pop: Label3D = null
+var ammo_pop_n := 0
+var ammo_pop_tw: Tween = null
 
 var coins := 0
 var unlocked := 1
@@ -256,9 +265,10 @@ func _ready() -> void:
 	for i in 46:
 		buckets.append(PackedInt32Array())
 	var args := OS.get_cmdline_user_args()
+	test_run = args.size() > 0  # bench/autoplay/flowtest/*shot: asla skor gonderme
 	if args.size() > 0 and args[0] == "bench":
 		bench = true
-		hint_seen = true
+		hint_seen = OS.get_environment("BENCH_HINT") != "1"
 		if args.size() > 1: bench_len = float(args[1])
 		for k in range(2, args.size() - 1, 2):
 			bench_shots.append([float(args[k]), args[k + 1]])
@@ -297,6 +307,51 @@ func _ready() -> void:
 		_show_map()
 		await get_tree().create_timer(2.5).timeout
 		get_viewport().get_texture().get_image().save_png(args[1])
+		get_tree().quit()
+	elif args.size() > 3 and args[0] == "hintshot":
+		hint_seen = false
+		start_level(0)
+		await get_tree().create_timer(0.3).timeout
+		var hp0 := hand.get_global_rect().get_center()
+		var cp0 := cam.unproject_position(barrel.global_position + Vector3(0, 0.5, 0))
+		get_viewport().get_texture().get_image().save_png(args[1])
+		await get_tree().create_timer(1.6).timeout
+		get_viewport().get_texture().get_image().save_png(args[2])
+		holding = true
+		await get_tree().create_timer(1.0).timeout
+		var vis_1s := hint.visible
+		await get_tree().create_timer(1.5).timeout
+		print("HINTSHOT knob_center=%s cannon_screen=%s visible_after_1s_fire=%s visible_after_2.5s_fire=%s fire_t=%.2f drag=%.0f" % [hp0, cp0, vis_1s, hint.visible, hint_fire_t, drag_sum])
+		get_viewport().get_texture().get_image().save_png(args[3])
+		get_tree().quit()
+	elif args.size() > 2 and args[0] == "popshot":
+		hint_seen = true
+		rate_lv = 0; card_lv = [0, 0, 0, 0]
+		start_level(1)
+		holding = true
+		await get_tree().create_timer(3.0).timeout
+		for k in 9:
+			_reward(-1.6 + k * 0.1, -9.0 - k * 0.2, false)
+			await get_tree().create_timer(0.06).timeout
+		print("POPSHOT text=%s" % (ammo_pop.text if is_instance_valid(ammo_pop) else "-"))
+		get_viewport().get_texture().get_image().save_png(args[1])
+		await get_tree().create_timer(5.0).timeout
+		get_viewport().get_texture().get_image().save_png(args[2])
+		get_tree().quit()
+	elif args.size() > 2 and args[0] == "winshot":
+		hint_seen = true
+		start_level(0)
+		await get_tree().create_timer(0.8).timeout
+		ammo = 60; time_left = 70.0
+		_win()
+		await get_tree().create_timer(1.15).timeout
+		var r0 := btn_next.get_global_rect()
+		var d0 := btn_double.get_global_rect()
+		var lk := btn_next.mouse_filter == Control.MOUSE_FILTER_IGNORE
+		get_viewport().get_texture().get_image().save_png(args[1])
+		await get_tree().create_timer(3.0).timeout
+		print("WINSHOT next_mid=%s next_end=%s double_mid=%s double_end=%s locked_mid=%s locked_end=%s" % [r0, btn_next.get_global_rect(), d0, btn_double.get_global_rect(), lk, btn_next.mouse_filter == Control.MOUSE_FILTER_IGNORE])
+		get_viewport().get_texture().get_image().save_png(args[2])
 		get_tree().quit()
 	elif args.size() > 0 and args[0] == "autoplay":
 		_autoplay(int(args[1]) if args.size() > 1 else 0)
@@ -1196,6 +1251,8 @@ func _start(L: Dictionary, i: int) -> void:
 	if not hint_seen and not menu_mode and not daily and i == 0:
 		hint.visible = true
 		drag_sum = 0.0
+		hint_fire_t = 0.0
+		hint_t = 0.0
 
 func _setup_section() -> void:
 	var S: Dictionary = cur_L["sections"][sec]
@@ -1312,8 +1369,13 @@ func _process(dt: float) -> void:
 		cannon_x = clampf(cannon_x + kd * 10.0 * dt, -LANE + 0.4, LANE - 0.4)
 		drag_sum += 400 * dt
 	if hint.visible:
-		hand.position.x = 540 - 60 + sin(t * 3.0) * 220
-		if drag_sum > 40.0 and shots_fired > 3:
+		# tutamak topun ustunde baslar, sonra topun etrafinda saga-sola gider
+		hint_t += dt
+		var hsp := cam.unproject_position(barrel.global_position + Vector3(0, 0.5, 0))
+		var sway := sin(maxf(0.0, hint_t - 0.6) * 2.6) * 180.0 * clampf((hint_t - 0.6) / 0.8, 0.0, 1.0)
+		hand.position = hsp - hand.size * 0.5 + Vector2(sway, 0)
+		(hint.get_child(0) as Control).position.y = hsp.y - hand.size.y * 0.5 - 200.0
+		if drag_sum > 40.0 or hint_fire_t >= 2.0:
 			hint.visible = false
 			hint_seen = true
 			_save()
@@ -1363,6 +1425,7 @@ func _sim(dt: float) -> void:
 	var S: Dictionary = cur_L["sections"][sec]
 	time_left -= dt
 	if holding and ammo > 0:
+		hint_fire_t += dt
 		fire_acc += dt * _fire_rate()
 		while fire_acc >= 1.0 and ammo > 0:
 			fire_acc -= 1.0
@@ -1670,9 +1733,42 @@ func _reward(x: float, z: float, brute: bool) -> void:
 		var add := kill_acc / 3
 		kill_acc -= add * 3
 		ammo += add
-		if ammo_pop_t <= 0.0 or brute:
-			ammo_pop_t = 0.7
-			pop_text(Vector3(barrel.position.x, 2.6, sec_off + 0.5), "+%d mermi" % add if brute else "+mermi", CYAN)
+		_ammo_popup(x, z, add)
+
+func _ammo_popup(x: float, z: float, add: int) -> void:
+	# kucuk, kisa omurlu, yolun kenarinda; ard arda gelenler birlesir (+3 mermi)
+	var side := -1.0 if x < 0.0 else 1.0
+	var pos := Vector3(clampf(x + side * 1.3, -LANE + 0.3, LANE - 0.3), 1.4, z + sec_off)
+	if ammo_pop != null and is_instance_valid(ammo_pop) and ammo_pop_t > 0.0:
+		ammo_pop_n += add
+	else:
+		ammo_pop = Label3D.new()
+		ammo_pop.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		# eski yazinin (130, top hizasinda) ekranda ~%40'i; uzaklik telafisiyle her yerde ayni boy
+		var dk := clampf(cam.global_position.distance_to(pos) / cam.global_position.distance_to(Vector3(0, 2.6, sec_off + 0.5)), 1.0, 2.5)
+		ammo_pop.font_size = int(52 * dk)
+		ammo_pop.pixel_size = 0.009
+		ammo_pop.outline_size = int(16 * dk)
+		ammo_pop.font = bold
+		ammo_pop.modulate = CYAN
+		ammo_pop.no_depth_test = true
+		ammo_pop.render_priority = 10
+		ammo_pop.outline_render_priority = 9
+		add_child(ammo_pop)
+		ammo_pop_n = add
+		ammo_pop.position = pos
+	ammo_pop_t = 0.5
+	var l := ammo_pop
+	l.text = "+%d mermi" % ammo_pop_n
+	l.modulate.a = 1.0
+	l.scale = Vector3.ONE * 1.25
+	if ammo_pop_tw != null and ammo_pop_tw.is_valid(): ammo_pop_tw.kill()
+	var tw := create_tween()
+	ammo_pop_tw = tw
+	tw.tween_property(l, "scale", Vector3.ONE, 0.08)
+	tw.parallel().tween_property(l, "position", l.position + Vector3(0, 0.5, 0), 0.4)
+	tw.tween_property(l, "modulate:a", 0.0, 0.15)
+	tw.tween_callback(l.queue_free)
 
 func _arrow(a: Vector3, b: Vector3) -> void:
 	var ar: MeshInstance3D = arrows[arrow_i]
@@ -1877,12 +1973,12 @@ func _win() -> void:
 	res_title.text = "ZAFER!"
 	res_title.modulate = CYAN
 	res_info.text = ""
-	_anim_win(st)
+	var adur := _anim_win(st)
 	btn_double.visible = true
 	btn_next.text = "Sonraki Bölüm" if level + 1 < LEVELS.size() else "Menü"
 	btn_next.visible = true
 	btn_revive.visible = false
-	_show_result()
+	_show_result(adur)
 
 func _lose(why: String) -> void:
 	sfx("lose", -2.0, 0.0, 0.0)
@@ -1899,11 +1995,24 @@ func _lose(why: String) -> void:
 	btn_next.visible = true
 	_show_result()
 
-func _show_result() -> void:
+func _show_result(lock := 0.5) -> void:
 	hud.visible = false
 	result.visible = true
 	result.modulate.a = 0.0
 	create_tween().tween_property(result, "modulate:a", 1.0, 0.25)
+	# animasyon bitene kadar butonlar tiklanmaz
+	res_lock_id += 1
+	var my_id := res_lock_id
+	for b: Button in res_btns:
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.modulate.a = 0.45
+	var tw := create_tween()
+	tw.tween_interval(lock)
+	tw.tween_callback(func() -> void:
+		if my_id != res_lock_id: return
+		for b: Button in res_btns:
+			b.mouse_filter = Control.MOUSE_FILTER_STOP
+			create_tween().tween_property(b, "modulate:a", 1.0, 0.12))
 
 func _on_double() -> void:
 	if doubled: return
@@ -2129,11 +2238,14 @@ func _build_ui() -> void:
 		res_stars.append(sp)
 	res_info = _label("", 44, rv, Color(1, 0.85, 0.2))
 	res_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	res_info.custom_minimum_size = Vector2(860, 0)
+	# metin alani bastan ayrilir: yazi animasyonu sirasinda butonlar kaymaz
+	res_info.custom_minimum_size = Vector2(860, 500)
+	res_info.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	btn_next = _btn("Sonraki", Color(0.1, 0.7, 0.45), rv, _on_next)
 	btn_double = _btn("2× Coin  (Reklam izle)", Color(0.95, 0.6, 0.1), rv, _on_double)
 	btn_revive = _btn("Devam et +50 mermi (Reklam)", Color(0.85, 0.3, 0.6), rv, _on_revive)
-	btn_next = _btn("Sonraki", Color(0.1, 0.7, 0.45), rv, _on_next)
-	_btn("Menü", Color(0.3, 0.3, 0.5), rv, _show_menu)
+	var bmenu := _btn("Menü", Color(0.3, 0.3, 0.5), rv, _show_menu)
+	res_btns = [btn_next, btn_double, btn_revive, bmenu]
 	result.visible = false
 	var fl := CanvasLayer.new()
 	fl.layer = 10
@@ -2379,7 +2491,8 @@ func _on_lb(_r: int, code: int, _h: PackedStringArray, body: PackedByteArray) ->
 	daily_list.text = "\n".join(lines)
 
 func _post_score(score: int) -> void:
-	if nickname.length() < 2: return
+	if test_run or nickname.length() < 2: return
+	posts_sent += 1
 	var body := JSON.stringify({"day": daily_day, "nick": nickname, "score": score})
 	post_http.cancel_request()
 	post_http.request(API + "/score", ["Content-Type: application/json"], HTTPClient.METHOD_POST, body)
@@ -3021,7 +3134,7 @@ func _apply_opts() -> void:
 	if envr: envr.glow_enabled = opt["shadows"]
 	_music(cur_music)
 
-func _anim_win(st: int) -> void:
+func _anim_win(st: int) -> float:
 	stars_box.visible = true
 	for k in 3:
 		var p: Polygon2D = res_stars[k]
@@ -3041,6 +3154,7 @@ func _anim_win(st: int) -> void:
 	var base := coins - e
 	var wl := win_lines
 	tw.tween_method(func(v: float) -> void: res_info.text = "%s = +%d coin\nToplam: %d" % [wl, int(v), base + int(v)], 0.0, float(e), 1.0)
+	return st * 0.45 + 1.0
 
 func _ok(name: String, cond: bool) -> void:
 	ft_res.append([name, cond])
@@ -3136,7 +3250,7 @@ func _flowtest(shot: String) -> void:
 	await _wait(2.5)
 	btn_next.pressed.emit()
 	await _wait(4.0)
-	_ok("skor sunucuya gitti ve listede", daily_list.text.contains("flowtest_bot"))
+	_ok("test kosusu skor GONDERMEDI, siralama okundu", posts_sent == 0 and not daily_list.text.contains("alınamadı"))
 	var fails := 0
 	for r in ft_res:
 		if not r[1]: fails += 1
@@ -3145,32 +3259,73 @@ func _flowtest(shot: String) -> void:
 
 
 func _autoplay(lv: int) -> void:
+	# AP_MODE: smart (varsayilan, eski bot) | casual (gecikmeli/yanilan oyuncu) | hold (ortada basili tut)
+	var mode := OS.get_environment("AP_MODE")
+	if mode == "": mode = "smart"
+	var ts := float(OS.get_environment("AP_TS")) if OS.get_environment("AP_TS") != "" else 2.0
+	var shots := mode == "smart" and DisplayServer.get_name() != "headless"
 	hint_seen = lv > 0
+	rate_lv = 0; card_lv = [0, 0, 0, 0]
 	owned = [true, true, false, false]; slots = [0, 0, 1] if lv >= 2 else [0, 0, 0]
 	var dir := "/workspace/riftrush-review/"
 	start_level(lv)
-	Engine.time_scale = 2.0
+	Engine.time_scale = ts
 	holding = true
 	var shot_i := 0
 	var t0 := Time.get_ticks_msec()
+	var rt := 0.0
+	var tgt_x := 0.0
+	var tgt_g = null
 	while playing:
 		await get_tree().process_frame
-		Engine.time_scale = 2.0
+		Engine.time_scale = ts
 		holding = true
-		var best := 99.0
-		var tx := 0.0
-		for g in gates:
-			if g["sec"] == sec and String(g["op"]).begins_with("x") and absf(g["z"]) < best:
-				best = absf(g["z"]); tx = g["cx"]
-		if ex.size() > 0 and randf() < 0.3:
-			var nz := -999.0
-			for j in ex.size():
-				if ez[j] > nz: nz = ez[j]; if nz > -12.0: tx = ex[j]
-		cannon_x = move_toward(cannon_x, tx, 0.25)
-		if (Time.get_ticks_msec() - t0) > 9000 * (shot_i + 1) and shot_i < 3:
+		var gdt := get_process_delta_time() * ts
+		if mode == "hold":
+			cannon_x = 0.0
+		elif mode == "casual":
+			rt -= gdt
+			if rt <= 0.0:
+				rt = randf_range(0.4, 0.9)
+				tgt_g = null
+				var r := randf()
+				var bestg = null
+				var bz := 99.0
+				for g in gates:
+					if g["sec"] == sec and not String(g["op"]).begins_with("-") and absf(g["z"]) < bz:
+						bz = absf(g["z"]); bestg = g
+				var nz := -999.0
+				var nx := 0.0
+				for j in ex.size():
+					if ez[j] > nz: nz = ez[j]; nx = ex[j]
+				if r < 0.15 and nz > -12.0:
+					tgt_x = nx
+				elif r < 0.85 and bestg != null:
+					tgt_g = bestg
+					tgt_x = 0.0
+				else:
+					tgt_x = randf_range(-3.0, 3.0)
+				tgt_x += randf_range(-0.6, 0.6)
+			var want: float = (tgt_g["cx"] + tgt_x) if tgt_g != null else tgt_x
+			cannon_x = move_toward(cannon_x, want, 8.0 * gdt)
+		else:
+			var best := 99.0
+			var tx := 0.0
+			for g in gates:
+				if g["sec"] == sec and String(g["op"]).begins_with("x") and absf(g["z"]) < best:
+					best = absf(g["z"]); tx = g["cx"]
+			if ex.size() > 0 and randf() < 0.3:
+				var nz := -999.0
+				for j in ex.size():
+					if ez[j] > nz: nz = ez[j]; if nz > -12.0: tx = ex[j]
+			cannon_x = move_toward(cannon_x, tx, 0.25)
+		if shots and (Time.get_ticks_msec() - t0) > 9000 * (shot_i + 1) and shot_i < 3:
 			shot_i += 1
-			get_viewport().get_texture().get_image().save_png(dir + "rr7-L%d-%d.png" % [lv + 1, shot_i])
-	print("AUTOPLAY level=%d result=%s time_left=%.1f ammo=%d sec=%d/%d" % [lv + 1, res_title.text, time_left, ammo, sec + 1, bases.size()])
-	await _wait(3.0)
-	get_viewport().get_texture().get_image().save_png(dir + "rr7-L%d-result.png" % (lv + 1))
+			get_viewport().get_texture().get_image().save_png(dir + "rr8-ap-L%d-%d.png" % [lv + 1, shot_i])
+	var used: float = float(cur_L["time"]) - time_left
+	await _wait(1.3)
+	print("AUTOPLAY mode=%s level=%d result=%s used=%.1fs time_left=%.1f ammo=%d/%d sec=%d/%d base_hp=%d" % [mode, lv + 1, "WIN" if res_title.text == "ZAFER!" else "LOSE", used, time_left, ammo, start_ammo, sec + 1, bases.size(), maxi(base_hp, 0)])
+	if shots:
+		await _wait(1.7)
+		get_viewport().get_texture().get_image().save_png(dir + "rr8-ap-L%d-result.png" % (lv + 1))
 	get_tree().quit()

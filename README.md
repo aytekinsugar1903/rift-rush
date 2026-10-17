@@ -6,3 +6,5 @@ Godot 4.7.1, portrait 1080x1920. Web demo: https://riftrush-demo.aytekinsugar190
 - APK: --export-debug Android build/riftrush-debug.apk
 - Bench: xvfb-run godot --path . -- bench 16 out.png
 - Reklamlar: ads.gd (stub)
+- Test modlari (hicbiri skor gondermez): autoplay N (AP_MODE=smart|casual|hold, AP_TS), flowtest, bench, hintshot/winshot/popshot
+- Zorluk denemesi: ./tools_trials.sh casual 1 16 4
