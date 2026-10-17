@@ -134,6 +134,7 @@ var cpu_us: Array = []
 
 func _ready() -> void:
 	_load()
+	await _bake_units()
 	_build_world()
 	_build_ui()
 	for i in 46:
@@ -251,112 +252,211 @@ func _particles(mesh: Mesh, amount: int, life: float, vmin: float, vmax: float, 
 	add_child(p)
 	return p
 
+# ---------------- varlik yardimcilari (Kenney CC0) ----------------
+const NF := 6
+var unit_frames: Array = []
+var unit_mat: Material
+var pmms: Array = []
+var emms: Array = []
+var pbufs: Array = []
+var ebufs: Array = []
+var mesh_cache: Dictionary = {}
+
+func _glb(path: String) -> Node3D:
+	return (load(path) as PackedScene).instantiate() as Node3D
+
+func _flatten(root: Node3D, bake := false) -> ArrayMesh:
+	var out := ArrayMesh.new()
+	var inv := root.global_transform.affine_inverse()
+	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
+		var m: Mesh = mi.mesh
+		if bake and mi.skin != null:
+			m = mi.bake_mesh_from_current_skeleton_pose()
+		var xf := inv * mi.global_transform
+		for s in m.get_surface_count():
+			var st := SurfaceTool.new()
+			st.append_from(m, s, xf)
+			st.commit(out)
+			out.surface_set_material(out.get_surface_count() - 1, mi.get_active_material(s))
+	return out
+
+func _asset_mesh(path: String) -> ArrayMesh:
+	if mesh_cache.has(path): return mesh_cache[path]
+	var n := _glb(path)
+	add_child(n)
+	var m := _flatten(n)
+	n.queue_free()
+	mesh_cache[path] = m
+	return m
+
+func _bake_units() -> void:
+	var ch := _glb("res://assets/chars/character-male-a.glb")
+	add_child(ch)
+	var ap: AnimationPlayer = ch.find_child("AnimationPlayer", true, false)
+	ap.play("sprint")
+	ap.speed_scale = 0.0
+	var L := ap.current_animation_length
+	for f in NF:
+		ap.seek(L * f / NF, true)
+		await get_tree().process_frame
+		unit_frames.append(_flatten(ch, true))
+	unit_mat = (unit_frames[0] as ArrayMesh).surface_get_material(0)
+	ch.queue_free()
+
+func _team_mat(tint: Color, glow: Color, ge := 0.3) -> Material:
+	var m: StandardMaterial3D
+	if unit_mat is StandardMaterial3D:
+		m = (unit_mat as StandardMaterial3D).duplicate()
+	else:
+		m = StandardMaterial3D.new()
+	m.albedo_color = tint
+	m.emission_enabled = true
+	m.emission = glow
+	m.emission_energy_multiplier = ge
+	m.rim_enabled = true
+	m.rim = 0.6
+	return m
+
+func _scatter(path: String, xfs: Array, parent: Node, mat: Material = null) -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = _asset_mesh(path)
+	mm.instance_count = xfs.size()
+	for i in xfs.size():
+		mm.set_instance_transform(i, xfs[i])
+	var mi := MultiMeshInstance3D.new()
+	mi.multimesh = mm
+	if mat: mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows_on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mi)
+
+func _place(path: String, pos: Vector3, s: float, rot_y: float, parent: Node) -> Node3D:
+	var n := _glb(path)
+	n.position = pos
+	n.scale = Vector3.ONE * s
+	n.rotation.y = rot_y
+	parent.add_child(n)
+	return n
+
+var shadows_on := false
+
 # ---------------- dunya ----------------
 func _build_world() -> void:
+	shadows_on = OS.get_environment("SHADOWS") == "1"  # varsayilan kapali (mobil/web performansi)
 	var env := Environment.new()
 	var sky := Sky.new()
 	var psm := ProceduralSkyMaterial.new()
-	psm.sky_top_color = Color(0.12, 0.03, 0.3)
-	psm.sky_horizon_color = Color(0.75, 0.25, 0.85)
-	psm.ground_horizon_color = Color(0.55, 0.15, 0.7)
-	psm.ground_bottom_color = Color(0.05, 0.02, 0.12)
+	psm.sky_top_color = Color(0.22, 0.5, 0.95)
+	psm.sky_horizon_color = Color(0.72, 0.86, 1.0)
+	psm.ground_horizon_color = Color(0.72, 0.86, 1.0)
+	psm.ground_bottom_color = Color(0.3, 0.55, 0.85)
+	psm.sun_angle_max = 20.0
 	sky.sky_material = psm
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.6, 0.55, 0.9)
-	env.ambient_light_energy = 0.35
+	env.ambient_light_color = Color(0.85, 0.85, 0.95)
+	env.ambient_light_energy = 0.55
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_white = 2.2
 	env.glow_enabled = true
-	env.glow_intensity = 0.8
-	env.glow_bloom = 0.1
+	env.glow_intensity = 0.35
+	env.glow_hdr_threshold = 1.2
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.45, 0.15, 0.6)
-	env.fog_density = 0.0035
+	env.fog_light_color = Color(0.75, 0.87, 1.0)
+	env.fog_density = 0.0025
+	env.fog_sky_affect = 0.3
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-50, -35, 0)
-	sun.light_energy = 1.3
-	sun.light_color = Color(1.0, 0.92, 0.95)
-	sun.shadow_enabled = OS.get_environment("NOSHADOW") == ""
+	sun.rotation_degrees = Vector3(-48, -40, 0)
+	sun.light_energy = 1.1
+	sun.light_color = Color(1.0, 0.96, 0.88)
+	sun.shadow_enabled = shadows_on
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 45.0
+	sun.directional_shadow_max_distance = 50.0
 	add_child(sun)
 
 	cam = Camera3D.new()
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	cam.fov = 62
-	cam.far = 220
+	cam.far = 260
 	add_child(cam)
 
 	level_root = Node3D.new()
 	add_child(level_root)
 
-	# kenar manzara (kalici)
+	# deniz + bulutlar (kalici)
+	var sea := PlaneMesh.new()
+	sea.size = Vector2(600, 600)
+	var seam := _mat(Color(0.18, 0.55, 0.9), 0.0, 1.0, 0.2, 0.08)
+	_mesh(sea, Vector3(0, -9, -80), seam, self, Vector3.ZERO, false)
+	var cl := SphereMesh.new(); cl.radial_segments = 10; cl.rings = 6
+	var clm := _mat(Color(1, 1, 1), 0.25, 1.0, 0.0, 1.0)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
-	var rock := SphereMesh.new(); rock.radial_segments = 6; rock.rings = 3
-	var rmat := _mat(Color(0.22, 0.14, 0.35), 0.0, 1.0, 0.0, 0.9)
-	var cry := CylinderMesh.new(); cry.top_radius = 0.0; cry.bottom_radius = 0.5; cry.height = 2.4; cry.radial_segments = 5; cry.rings = 1
-	var cmats := [_mat(PURPLE, 2.2), _mat(Color(0.3, 0.6, 1.0), 2.0), _mat(Color(1.0, 0.3, 0.8), 2.0)]
-	for i in 70:
+	rng.seed = 11
+	var cx: Array = []
+	for i in 46:
 		var s := -1.0 if i % 2 == 0 else 1.0
-		var z := 14.0 - i * 3.4
-		var r := _mesh(rock, Vector3(s * rng.randf_range(7.0, 16.0), rng.randf_range(-3.0, -0.5), z + rng.randf_range(-1.5, 1.5)), rmat, self, Vector3(rng.randf() * 90, rng.randf() * 180, 0), false)
-		r.scale = Vector3.ONE * rng.randf_range(1.5, 4.0)
-		if i % 2 == 0 or i % 3 == 0:
-			var c := _mesh(cry, Vector3(s * rng.randf_range(7.5, 14.0), rng.randf_range(1.0, 5.0), z), cmats[i % 3], self, Vector3(rng.randf_range(-25, 25), 0, rng.randf_range(-25, 25)), false)
-			c.scale = Vector3.ONE * rng.randf_range(0.7, 1.8)
-			crystals.append([c, c.position.y, rng.randf() * 6.0])
+		var c := Vector3(s * rng.randf_range(24, 60), rng.randf_range(-7, 3), 20 - i * 6.0)
+		for k in 3:
+			cx.append(Transform3D(Basis().scaled(Vector3(rng.randf_range(3, 6), rng.randf_range(1.2, 2.2), rng.randf_range(2.5, 4.5))), c + Vector3(k * 3.0 - 3.0, rng.randf_range(-0.5, 0.5), rng.randf_range(-1.5, 1.5))))
+	var cmm := MultiMesh.new()
+	cmm.transform_format = MultiMesh.TRANSFORM_3D
+	cmm.mesh = cl
+	cmm.instance_count = cx.size()
+	for i in cx.size(): cmm.set_instance_transform(i, cx[i])
+	var cmi := MultiMeshInstance3D.new()
+	cmi.multimesh = cmm
+	cmi.material_override = clm
+	cmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(cmi)
 
+	# top (Kenney Tower Defense Kit)
 	cannon = Node3D.new()
 	add_child(cannon)
-	_box(Vector3(10.0, 0.25, 0.6), Vector3(0, 0.12, 0), _mat(Color(0.35, 0.4, 0.55), 0.0, 1.0, 0.8, 0.3), cannon)
-	_box(Vector3(10.0, 0.08, 0.1), Vector3(0, 0.27, 0), _mat(CYAN, 2.0), cannon)
+	_box(Vector3(10.0, 0.3, 0.7), Vector3(0, 0.15, 0), _mat(Color(0.45, 0.32, 0.22), 0.0, 1.0, 0.0, 0.8), cannon)
+	_box(Vector3(10.0, 0.1, 0.12), Vector3(0, 0.33, 0), _mat(Color(0.75, 0.75, 0.8), 0.0, 1.0, 0.9, 0.3), cannon)
 	barrel = Node3D.new()
 	cannon.add_child(barrel)
-	var dark := _mat(Color(0.2, 0.24, 0.35), 0.0, 1.0, 0.85, 0.25)
-	_cyl(1.0, 1.25, 0.6, Vector3(0, 0.55, 0), dark, barrel, 16)
-	ring = _mesh(TorusMesh.new(), Vector3(0, 0.9, 0), _mat(CYAN, 3.0), barrel)
-	(ring.mesh as TorusMesh).inner_radius = 0.8
-	(ring.mesh as TorusMesh).outer_radius = 1.0
-	_mesh(SphereMesh.new(), Vector3(0, 1.1, 0), dark, barrel).scale = Vector3(1.6, 1.2, 1.6)
-	_cyl(0.42, 0.55, 2.2, Vector3(0, 1.3, -1.0), _mat(Color(0.9, 0.95, 1.0), 0.0, 1.0, 0.9, 0.2), barrel, 14, Vector3(-80, 0, 0))
-	_cyl(0.5, 0.5, 0.25, Vector3(0, 1.45, -2.05), _mat(CYAN, 3.0), barrel, 14, Vector3(-80, 0, 0))
-	flash = _mesh(SphereMesh.new(), Vector3(0, 1.5, -2.5), _mat(Color(0.6, 1.0, 1.0), 6.0), barrel, Vector3.ZERO, false)
+	var cn := _place("res://assets/td/weapon-cannon.glb", Vector3(0, 0.45, 0), 3.6, PI, barrel)
+	cn.name = "CannonModel"
+	ring = _mesh(TorusMesh.new(), Vector3(0, 0.5, 0), _mat(CYAN, 2.5), barrel, Vector3.ZERO, false)
+	(ring.mesh as TorusMesh).inner_radius = 1.2
+	(ring.mesh as TorusMesh).outer_radius = 1.35
+	flash = _mesh(SphereMesh.new(), Vector3(0, 1.4, -1.6), _mat(Color(1.0, 0.9, 0.5), 6.0), barrel, Vector3.ZERO, false)
 	flash.scale = Vector3.ZERO
 	flash_light = OmniLight3D.new()
-	flash_light.light_color = CYAN
+	flash_light.light_color = Color(1, 0.85, 0.5)
 	flash_light.omni_range = 6
-	flash_light.position = Vector3(0, 1.6, -2.6)
+	flash_light.position = Vector3(0, 1.5, -1.8)
 	barrel.add_child(flash_light)
 
-	var pmi := MultiMeshInstance3D.new()
-	pmm = MultiMesh.new()
-	pmm.transform_format = MultiMesh.TRANSFORM_3D
-	pmm.mesh = _unit_mesh(CYAN)
-	pmm.instance_count = MAXP
-	pmm.visible_instance_count = 0
-	pmi.multimesh = pmm
-	pmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pmi.extra_cull_margin = 400.0
-	add_child(pmi)
-	var emi := MultiMeshInstance3D.new()
-	emm = MultiMesh.new()
-	emm.transform_format = MultiMesh.TRANSFORM_3D
-	emm.mesh = _unit_mesh(ENEMY)
-	emm.instance_count = MAXE
-	emm.visible_instance_count = 0
-	emi.multimesh = emm
-	emi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	emi.extra_cull_margin = 400.0
-	add_child(emi)
-	pbuf.resize(MAXP * 12)
-	for i in MAXP:
-		pbuf[i * 12] = 1.0; pbuf[i * 12 + 5] = 1.0; pbuf[i * 12 + 10] = 1.0
-	ebuf.resize(MAXE * 12)
+	# birimler: Kenney Mini Characters 'sprint' animasyonu NF kareye pisirildi
+	var pmat := _team_mat(Color(0.8, 1.0, 1.0), CYAN, 0.75)
+	var emat := _team_mat(Color(1.0, 0.7, 0.6), ENEMY, 0.55)
+	var per_p := MAXP / NF + 1
+	var per_e := MAXE / NF + 1
+	for g in NF:
+		for team in 2:
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = unit_frames[g]
+			mm.instance_count = per_p if team == 0 else per_e
+			mm.visible_instance_count = 0
+			var mi := MultiMeshInstance3D.new()
+			mi.multimesh = mm
+			mi.material_override = pmat if team == 0 else emat
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.extra_cull_margin = 400.0
+			add_child(mi)
+			var b := PackedFloat32Array()
+			b.resize(mm.instance_count * 12)
+			if team == 0:
+				pmms.append(mm); pbufs.append(b)
+			else:
+				emms.append(mm); ebufs.append(b)
 
 	var pm := StandardMaterial3D.new()
 	pm.vertex_color_use_as_albedo = true
@@ -369,6 +469,55 @@ func _build_world() -> void:
 	var cmesh := BoxMesh.new(); cmesh.size = Vector3(0.45, 0.35, 0.4); cmesh.material = cm
 	for i in 10:
 		chunks.append(_particles(cmesh, 10, 1.1, 5.0, 10.0, -20.0))
+
+func _build_island(total: float) -> void:
+	var z0 := 10.0
+	var zc := z0 - total * 0.5
+	# ada govdesi + cim
+	_box(Vector3(44, 0.6, total + 6), Vector3(0, -0.35, zc), _mat(Color(0.36, 0.72, 0.28), 0.0, 1.0, 0.0, 0.9), level_root, false)
+	_box(Vector3(42, 7, total + 4), Vector3(0, -4.0, zc), _mat(Color(0.5, 0.38, 0.28), 0.0, 1.0, 0.0, 1.0), level_root, false)
+	# yol (tas) + kenar
+	_box(Vector3(10.4, 0.3, total), Vector3(0, -0.12, zc), _mat(Color(0.62, 0.55, 0.45), 0.0, 1.0, 0.0, 0.85), level_root, false)
+	var tile := _mat(Color(0.55, 0.48, 0.4), 0.0, 1.0, 0.0, 0.85)
+	for k in int(total / 3.0):
+		_box(Vector3(9.8, 0.04, 1.4), Vector3(0, 0.04, z0 - 2.0 - k * 3.0), tile, level_root, false)
+	var edge := _mat(Color(0.62, 0.62, 0.66), 0.0, 1.0, 0.0, 0.7)
+	for s in [-1, 1]:
+		_box(Vector3(0.5, 0.55, total), Vector3(s * 5.3, 0.15, zc), edge, level_root)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var n := int(total / 3.0)
+	var trees := {"res://assets/nature/tree_default.glb": [], "res://assets/nature/tree_oak.glb": [], "res://assets/nature/tree_pineRoundC.glb": [], "res://assets/nature/tree_detailed.glb": []}
+	var tk := trees.keys()
+	var bush: Array = []
+	var bush2: Array = []
+	var fl := {"res://assets/nature/flower_redA.glb": [], "res://assets/nature/flower_yellowA.glb": [], "res://assets/nature/flower_purpleA.glb": []}
+	var fk := fl.keys()
+	var rocks: Array = []
+	var cliffs: Array = []
+	var grass: Array = []
+	for i in n:
+		var z := z0 - i * 3.0
+		for s in [-1, 1]:
+			var y := rng.randf() * TAU
+			trees[tk[rng.randi() % 4]].append(Transform3D(Basis(Vector3.UP, y).scaled(Vector3.ONE * rng.randf_range(3.0, 4.6)), Vector3(s * rng.randf_range(8.5, 20.0), 0, z + rng.randf_range(-1, 1))))
+			bush.append(Transform3D(Basis(Vector3.UP, y).scaled(Vector3.ONE * rng.randf_range(2.0, 3.2)), Vector3(s * rng.randf_range(6.0, 8.0), 0, z + rng.randf_range(-1, 1))))
+			if i % 2 == 0:
+				bush2.append(Transform3D(Basis(Vector3.UP, y).scaled(Vector3.ONE * rng.randf_range(2.0, 3.0)), Vector3(s * rng.randf_range(10, 19), 0, z)))
+			for k in 1:
+				fl[fk[rng.randi() % 3]].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(2.0, 3.0)), Vector3(s * rng.randf_range(5.9, 12.0), 0, z + rng.randf_range(-1.2, 1.2))))
+			grass.append(Transform3D(Basis(Vector3.UP, y).scaled(Vector3.ONE * 2.5), Vector3(s * rng.randf_range(6.0, 16.0), 0, z + 1.0)))
+			if i % 3 == 0:
+				rocks.append(Transform3D(Basis(Vector3.UP, y).scaled(Vector3.ONE * rng.randf_range(2.5, 4.5)), Vector3(s * rng.randf_range(9, 20), 0, z)))
+			if i % 2 == 0:
+				cliffs.append(Transform3D(Basis(Vector3.UP, 0.0 if s > 0 else PI).rotated(Vector3.UP, PI * 0.5).scaled(Vector3(4.4, 7.0, 4.0)), Vector3(s * 21.0, -7.2, z)))
+	for k in tk: _scatter(k, trees[k], level_root)
+	_scatter("res://assets/nature/plant_bushLarge.glb", bush, level_root)
+	_scatter("res://assets/nature/plant_bush.glb", bush2, level_root)
+	for k in fk: _scatter(k, fl[k], level_root)
+	_scatter("res://assets/nature/grass_large.glb", grass, level_root)
+	_scatter("res://assets/nature/rock_tallB.glb", rocks, level_root)
+	_scatter("res://assets/nature/cliff_large_rock.glb", cliffs, level_root)
 
 func burst(pos: Vector3, c: Color, amount := 20) -> void:
 	var p: CPUParticles3D = parts[part_i]
@@ -410,12 +559,13 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	var n := Node3D.new()
 	n.position = Vector3(gd[1], 0, z_world)
 	level_root.add_child(n)
-	var frame := _mat(col.darkened(0.35), 0.4, 1.0, 0.6, 0.25)
+	var frame := _mat(Color(0.95, 0.95, 1.0) if good else Color(1, 0.9, 0.9), 0.0, 1.0, 0.1, 0.3)
+	var trim := _mat(col, 0.9)
 	for s in [-1, 1]:
 		_box(Vector3(0.45, 3.2, 0.6), Vector3(s * (w * 0.5), 1.6, 0), frame, n)
 		_box(Vector3(0.6, 0.3, 0.8), Vector3(s * (w * 0.5), 0.15, 0), frame, n)
-	_box(Vector3(w + 0.45, 0.5, 0.6), Vector3(0, 3.2, 0), frame, n)
-	var pmat := _mat(col, 0.8, 0.42)
+	_box(Vector3(w + 0.45, 0.5, 0.6), Vector3(0, 3.2, 0), trim, n)
+	var pmat := _mat(col.lightened(0.15), 0.35, 1.0, 0.0, 0.25)
 	_box(Vector3(w - 0.4, 2.9, 0.12), Vector3(0, 1.5, 0), pmat, n, false)
 	var lb := Label3D.new()
 	lb.text = String(gd[3]).replace("x", "×")
@@ -423,7 +573,7 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	lb.pixel_size = 0.0105
 	lb.outline_size = 44
 	lb.outline_modulate = col.darkened(0.6)
-	lb.position = Vector3(0, 1.7, 0.2)
+	lb.position = Vector3(0, 1.7, 0.4)
 	lb.rotation_degrees = Vector3(-20, 0, 0)
 	n.add_child(lb)
 	var charge := 10 if gd[3] == "+10" else (5 if gd[3] == "-5" else 0)
@@ -434,38 +584,44 @@ func _make_base(z_world: float, boss: bool) -> Dictionary:
 	var n := Node3D.new()
 	n.position = Vector3(0, 0, z_world)
 	level_root.add_child(n)
-	var body := _mat(Color(0.75, 0.22, 0.12), 0.15, 1.0, 0.4, 0.45)
-	var trim := _mat(Color(0.25, 0.1, 0.12), 0.0, 1.0, 0.7, 0.3)
-	var glow := _mat(Color(1.0, 0.6, 0.15), 3.0)
-	_box(Vector3(6.5, 3.6, 3.0), Vector3(0, 1.8, 0), body, n)
-	_box(Vector3(7.0, 0.5, 3.4), Vector3(0, 3.8, 0), trim, n)
-	for i in 6:
-		_box(Vector3(0.7, 0.6, 0.6), Vector3(-2.9 + i * 1.16, 4.3, 1.4), trim, n)
-	_box(Vector3(1.8, 2.2, 0.3), Vector3(0, 1.1, 1.45), _mat(Color(0.08, 0.03, 0.05), 0.0), n)
-	_box(Vector3(2.2, 0.2, 0.35), Vector3(0, 2.3, 1.5), glow, n)
+	var S := 2.4
+	var C := "res://assets/castle/"
+	for x in [-2.4, 0.0, 2.4]:
+		_place(C + "wall.glb", Vector3(x, 0, 0), S, 0.0, n)
+	var gt := _place(C + "gate.glb", Vector3(0, 0, 1.25), S * 1.3, PI * 0.5, n)
+	gt.scale.x = S * 1.3
 	for s in [-1, 1]:
-		_cyl(0.95, 1.1, 5.4, Vector3(s * 3.3, 2.7, 0), body, n, 10)
-		_cyl(0.0, 1.35, 1.8, Vector3(s * 3.3, 6.3, 0), trim, n, 10)
-		_box(Vector3(0.5, 0.7, 0.2), Vector3(s * 3.3, 3.6, 1.0), glow, n)
-		_box(Vector3(0.6, 0.6, 0.2), Vector3(s * 1.7, 2.6, 1.55), glow, n)
+		_place(C + "tower-square-base.glb", Vector3(s * 4.3, 0, 0), S * 1.05, 0.0, n)
+		_place(C + "tower-square-mid-windows.glb", Vector3(s * 4.3, S * 1.05 * 1.01, 0), S * 1.05, 0.0, n)
+		_place(C + "tower-square-top-roof-high.glb", Vector3(s * 4.3, S * 1.05 * 2.02, 0), S * 1.05, 0.0, n)
+		_place(C + "flag.glb", Vector3(s * 4.3, S * 1.05 * 3.35, 0), S, 0.0, n)
 	if boss:
-		_cyl(1.3, 1.6, 4.0, Vector3(0, 5.8, -0.4), body, n, 10)
-		_cyl(0.0, 1.9, 2.4, Vector3(0, 9.0, -0.4), trim, n, 10)
-		_box(Vector3(1.2, 0.8, 0.2), Vector3(0, 6.2, 1.0), glow, n)
-		n.scale = Vector3.ONE * 1.25
-	# yarik (dusmanlar buradan gelir)
-	var rift := _mesh(TorusMesh.new(), Vector3(0, 5.2 if not boss else 7.0, -3.2), _mat(PURPLE, 3.5), n, Vector3(90, 0, 0), false)
-	(rift.mesh as TorusMesh).inner_radius = 2.6
-	(rift.mesh as TorusMesh).outer_radius = 3.2
-	var core := _cyl(2.6, 2.6, 0.05, Vector3.ZERO, _mat(Color(0.35, 0.05, 0.6), 1.5, 0.75), rift, 24)
+		_place(C + "tower-hexagon-base.glb", Vector3(0, 0, -2.4), S * 1.4, 0.0, n)
+		_place(C + "tower-hexagon-mid.glb", Vector3(0, S * 1.4, -2.4), S * 1.4, 0.0, n)
+		_place(C + "tower-hexagon-mid.glb", Vector3(0, S * 2.8, -2.4), S * 1.4, 0.0, n)
+		_place(C + "tower-hexagon-roof.glb", Vector3(0, S * 4.2, -2.4), S * 1.4, 0.0, n)
+		_place(C + "flag-banner-long.glb", Vector3(-1.5, S * 1.3, 1.3), S, 0.0, n)
+		_place(C + "flag-banner-long.glb", Vector3(1.5, S * 1.3, 1.3), S, 0.0, n)
+	# tema vurgusu: kalenin arkasinda mor yarik + kristaller
+	var rift := _mesh(TorusMesh.new(), Vector3(0, 6.5 if not boss else 9.5, -4.5), _mat(PURPLE, 3.0), n, Vector3(90, 0, 0), false)
+	(rift.mesh as TorusMesh).inner_radius = 1.8
+	(rift.mesh as TorusMesh).outer_radius = 2.2
+	var core := _cyl(1.8, 1.8, 0.05, Vector3.ZERO, _mat(Color(0.45, 0.1, 0.75), 1.6, 0.7), rift, 24)
 	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var crm := _mat(PURPLE, 1.2)
+	for s in [-1, 1]:
+		var cr := _place("res://assets/td/detail-crystal-large.glb", Vector3(s * 6.6, 0, -1.0), 4.0, randf() * TAU, n)
+		for mi: MeshInstance3D in cr.find_children("*", "MeshInstance3D", true, false):
+			mi.material_override = crm
 	var ol := OmniLight3D.new()
 	ol.light_color = PURPLE
-	ol.light_energy = 3.0
-	ol.omni_range = 14
-	ol.position = Vector3(0, 4, -1)
+	ol.light_energy = 2.0
+	ol.omni_range = 10
+	ol.position = Vector3(0, 5, -2)
 	n.add_child(ol)
-	return {"node": n, "body": body, "rift": rift, "cracks": 0}
+	if boss:
+		n.scale = Vector3.ONE * 1.25
+	return {"node": n, "body": StandardMaterial3D.new(), "rift": rift, "cracks": 0}
 
 # ---------------- seviye ----------------
 func _clear_units() -> void:
@@ -481,16 +637,7 @@ func start_level(i: int) -> void:
 	gates.clear()
 	bases.clear()
 	var secs: Array = L["sections"]
-	# platform
-	var total := SEC_LEN * secs.size() + 30.0
-	_box(Vector3(10.4, 1.2, total), Vector3(0, -0.6, 8.0 - total * 0.5), _mat(Color(0.08, 0.07, 0.2), 0.0, 1.0, 0.3, 0.6), level_root)
-	_box(Vector3(11.4, 0.6, total), Vector3(0, -1.3, 8.0 - total * 0.5), _mat(Color(0.08, 0.05, 0.18), 0.0), level_root)
-	var rail := _mat(CYAN, 1.6)
-	for s in [-1, 1]:
-		_box(Vector3(0.35, 0.5, total), Vector3(s * 5.2, 0.25, 8.0 - total * 0.5), rail, level_root)
-	var tile := _mat(Color(0.14, 0.12, 0.32), 0.0, 1.0, 0.2, 0.5)
-	for k in int(total / 3.0):
-		_box(Vector3(9.6, 0.04, 1.3), Vector3(0, 0.02, 6.0 - k * 3.0), tile, level_root, false)
+	_build_island(SEC_LEN * secs.size() + 30.0)
 	for si in secs.size():
 		var S: Dictionary = secs[si]
 		var off := -si * SEC_LEN
@@ -560,6 +707,7 @@ func _input(e: InputEvent) -> void:
 
 # ---------------- dongu ----------------
 func _process(dt: float) -> void:
+	if cam == null: return
 	t += dt
 	for c in crystals:
 		(c[0] as Node3D).position.y = c[1] + sin(t * 1.2 + c[2]) * 0.4
@@ -816,24 +964,40 @@ func _base_destroyed() -> void:
 	tw2.tween_callback(func() -> void: advancing = false)
 
 func _render() -> void:
+	var step := int(t * 16.0)
 	var n := px.size()
-	for i in n:
-		var o := i * 12
-		pbuf[o + 3] = px[i]
-		pbuf[o + 7] = 0.0
-		pbuf[o + 11] = pz[i] + sec_off
-	pmm.buffer = pbuf
-	pmm.visible_instance_count = n
+	for g in NF:
+		var b: PackedFloat32Array = pbufs[g]
+		var k := 0
+		var i := g
+		while i < n:
+			var o := k * 12
+			b[o] = -1.7; b[o + 5] = 1.7; b[o + 10] = -1.7
+			b[o + 3] = px[i]; b[o + 7] = 0.05; b[o + 11] = pz[i] + sec_off
+			k += 1
+			i += NF
+		var mm: MultiMesh = pmms[g]
+		mm.mesh = unit_frames[(g + step) % NF]
+		mm.buffer = b
+		mm.visible_instance_count = k
+		pbufs[g] = b
 	var m := ex.size()
-	for j in m:
-		var o := j * 12
-		var s: float = esc[j]
-		ebuf[o] = -s; ebuf[o + 5] = s; ebuf[o + 10] = -s
-		ebuf[o + 3] = ex[j]
-		ebuf[o + 7] = 0.0
-		ebuf[o + 11] = ez[j] + sec_off
-	emm.buffer = ebuf
-	emm.visible_instance_count = m
+	for g in NF:
+		var b: PackedFloat32Array = ebufs[g]
+		var k := 0
+		var j := g
+		while j < m:
+			var o := k * 12
+			var s: float = esc[j] * 2.0
+			b[o] = s; b[o + 5] = s; b[o + 10] = s
+			b[o + 3] = ex[j]; b[o + 7] = 0.05; b[o + 11] = ez[j] + sec_off
+			k += 1
+			j += NF
+		var mm: MultiMesh = emms[g]
+		mm.mesh = unit_frames[(g + step + 3) % NF]
+		mm.buffer = b
+		mm.visible_instance_count = k
+		ebufs[g] = b
 
 # ---------------- sonuc ----------------
 func _win() -> void:
