@@ -102,7 +102,11 @@ func _ready() -> void:
 		start_level(2)
 		ammo = 99999
 		rate_lv = 30
-		holding = true
+		var mb := InputEventMouseButton.new()
+		mb.button_index = MOUSE_BUTTON_LEFT
+		mb.pressed = true
+		mb.position = Vector2(540, 1200)
+		Input.parse_input_event(mb)
 	elif args.size() > 1 and args[0] == "menushot":
 		await get_tree().create_timer(1.5).timeout
 		get_viewport().get_texture().get_image().save_png(args[1])
@@ -152,10 +156,10 @@ func _build_world() -> void:
 
 	cam = Camera3D.new()
 	cam.keep_aspect = Camera3D.KEEP_WIDTH
-	cam.fov = 40
-	cam.position = Vector3(0, 25, 1)
+	cam.fov = 44
+	cam.position = Vector3(0, 34, 8)
 	add_child(cam)
-	cam.look_at(Vector3(0, 0, -16.5))
+	cam.look_at(Vector3(0, 0, -19))
 
 	_box(Vector3(11, 0.2, 52), Vector3(0, -0.1, -18), _mat(Color(0.12, 0.1, 0.28), 0.0))
 	for i in 13:
@@ -357,10 +361,10 @@ func _kill_e(j: int) -> void:
 
 # ---------------- girdi ----------------
 func _input(e: InputEvent) -> void:
-	if not playing or bench: return
-	if e is InputEventScreenTouch:
+	if not playing: return
+	if e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
 		holding = e.pressed
-	elif e is InputEventScreenDrag:
+	elif e is InputEventScreenDrag or (e is InputEventMouseMotion and holding):
 		var w := get_viewport().get_visible_rect().size.x
 		cannon_x = clampf(cannon_x + e.relative.x / w * 14.0, -LANE + 0.4, LANE - 0.4)
 	elif e is InputEventKey and e.keycode == KEY_SPACE:
@@ -372,7 +376,9 @@ func _process(dt: float) -> void:
 	rift.rotation.y += dt * 1.5
 	if bench:
 		ft.append(dt)
-		cannon_x = sin(t * 0.9) * 3.5
+		var mm := InputEventMouseMotion.new()
+		mm.relative = Vector2(cos(t * 0.9) * 3.5 * 0.9 * dt / 14.0 * get_viewport().get_visible_rect().size.x, 0)
+		Input.parse_input_event(mm)
 		max_units = max(max_units, px.size())
 		if bench_shot != "" and t > 6.0:
 			get_viewport().get_texture().get_image().save_png(bench_shot)
