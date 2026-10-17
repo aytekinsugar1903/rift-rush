@@ -1,5 +1,5 @@
 extends Node3D
-## Rift Rush - v8.2 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
+## Rift Rush - v8.3 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
 
 const LANE := 4.4
 const BASE_Z := -38.0
@@ -28,8 +28,8 @@ const LEVELS := [
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
 	{"ammo": 185, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 640, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
-	{"ammo": 186, "time": 120.0, "sections": [
+		{"hp": 650, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
+	{"ammo": 185, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
@@ -143,6 +143,9 @@ var ammo_warn: Label = null
 var hud_crow: Control = null
 var ptr_down := false
 var board_ref: Control = null
+var is_web := false
+var kalkan_told := false
+var is_replay := false
 
 var coins := 0
 var unlocked := 1
@@ -260,6 +263,7 @@ func _ready() -> void:
 	if is_low:
 		opt["shadows"] = false
 		maxp = 520
+	is_web = OS.has_feature("web")
 	bold = FontVariation.new()
 	bold.base_font = ThemeDB.fallback_font
 	bold.variation_embolden = 1.1
@@ -327,6 +331,32 @@ func _ready() -> void:
 		await get_tree().create_timer(1.5).timeout
 		print("HINTSHOT knob_center=%s cannon_screen=%s visible_after_1s_fire=%s visible_after_2.5s_fire=%s fire_t=%.2f drag=%.0f" % [hp0, cp0, vis_1s, hint.visible, hint_fire_t, drag_sum])
 		get_viewport().get_texture().get_image().save_png(args[3])
+		get_tree().quit()
+	elif args.size() > 4 and args[0] == "breakshot":
+		# L2: kalkan aciklama afisi + kapi yerlesimi, sonra kale yikimi ani
+		hint_seen = true
+		kalkan_told = false
+		rate_lv = 0; card_lv = [0, 0, 0, 0]
+		start_level(1)
+		holding = true
+		cannon_x = -2.2
+		await get_tree().create_timer(3.5).timeout
+		base_hp = 0
+		await get_tree().create_timer(0.25, true, false, true).timeout
+		var cx0 := cannon_x
+		get_viewport().get_texture().get_image().save_png(args[1])
+		var t0 := Time.get_ticks_msec()
+		while advancing:
+			await get_tree().process_frame
+		var adv_ms := Time.get_ticks_msec() - t0 + 250
+		await get_tree().create_timer(0.35).timeout
+		get_viewport().get_texture().get_image().save_png(args[2])
+		var s0 := shots_fired
+		await get_tree().create_timer(0.6).timeout
+		print("BREAKSHOT advance_ms~%d cannon_x_before=%.2f after=%.2f holding=%s shots_in_0.6s=%d banner=%s" % [adv_ms, cx0, cannon_x, holding, shots_fired - s0, banner.text])
+		get_viewport().get_texture().get_image().save_png(args[3])
+		await get_tree().create_timer(1.6).timeout
+		get_viewport().get_texture().get_image().save_png(args[4])
 		get_tree().quit()
 	elif args.size() > 1 and args[0] == "warnshot":
 		hint_seen = true
@@ -976,12 +1006,12 @@ func _build_world() -> void:
 	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var pmesh := BoxMesh.new(); pmesh.size = Vector3(0.18, 0.18, 0.18); pmesh.material = pm
 	for i in 24:
-		parts.append(_particles(pmesh, 16, 0.55, 3.0, 7.0, -14.0))
+		parts.append(_particles(pmesh, 9 if is_web else 16, 0.55, 3.0, 7.0, -14.0))
 	var cm := StandardMaterial3D.new()
 	cm.vertex_color_use_as_albedo = true
 	var cmesh := BoxMesh.new(); cmesh.size = Vector3(0.45, 0.35, 0.4); cmesh.material = cm
 	for i in 10:
-		chunks.append(_particles(cmesh, 10, 1.1, 5.0, 10.0, -20.0))
+		chunks.append(_particles(cmesh, 6 if is_web else 10, 1.1, 5.0, 10.0, -20.0))
 	_build_alive()
 
 func _build_island(total: float) -> void:
@@ -1012,7 +1042,7 @@ func _build_island(total: float) -> void:
 	sun.light_color = P["sun"]
 	amb_parts.color = P["pcol"]
 	amb_parts.gravity = P["pgrav"]
-	amb_parts.amount = 130 if biome == 2 else 90
+	amb_parts.amount = (130 if biome == 2 else 90) / (3 if is_web else 1)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
 	var n := int(total / 3.0)
@@ -1126,7 +1156,7 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	var pmat := _mat(col.lightened(0.15), 0.35, 1.0, 0.0, 0.25)
 	_box(Vector3(w - 0.4, 2.9, 0.12), Vector3(0, 1.5, 0), pmat, n, false)
 	var lb := Label3D.new()
-	lb.text = {"okcu": "OKÇU", "dev": "DEV\n10:1", "kalkan": "KALKAN\n+1"}.get(gd[3], String(gd[3]).replace("x", "×"))
+	lb.text = {"okcu": "OKÇU", "dev": "DEV\n10:1", "kalkan": "KALKAN\n+1 can"}.get(gd[3], String(gd[3]).replace("x", "×"))
 	var chars := 1
 	for ln in lb.text.split("\n"): chars = maxi(chars, ln.length())
 	lb.font_size = clampi(int((w - 0.7) / (chars * 0.66 * 0.0105)), 40, 200)
@@ -1149,6 +1179,10 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	cl.visible = not menu_mode
 	cl.no_depth_test = true
 	cl.position = Vector3(0, 4.3 + (1.3 if (gi % 2 == 1 and w < 5.0) else 0.0), 0)
+	if gd[3] in ["okcu", "kalkan", "dev"]:
+		cl.font_size = 56
+		cl.outline_size = 24
+		cl.position.y = 3.9
 	n.add_child(cl)
 	return {"cl": cl, "tot": 0, "ct": 9.0, "cnt": 0, "z": gd[0], "bx": gd[1], "cx": gd[1], "w": w, "op": gd[3], "amp": gd[4], "sec": si, "gi": gi,
 		"charge": charge, "node": n, "pend": 0, "col": col, "ph": randf() * 6.0, "pmat": pmat}
@@ -1257,6 +1291,7 @@ func _start(L: Dictionary, i: int) -> void:
 	settingsp.visible = false
 	Engine.time_scale = 1.0
 	start_ammo = maxi(1, int(L["ammo"]))
+	is_replay = not menu_mode and not daily and int(stars_best.get(i, 0)) > 0
 	if menu_mode: biome = 0
 	elif daily: biome = absi(hash(daily_day)) % 3
 	else: biome = [0, 0, 1, 1, 2, 2][mini(i, 5)]
@@ -1312,6 +1347,12 @@ func _start(L: Dictionary, i: int) -> void:
 
 func _setup_section() -> void:
 	var S: Dictionary = cur_L["sections"][sec]
+	if not kalkan_told and not menu_mode and not bench:
+		for gd in S["gates"]:
+			if gd[3] == "kalkan":
+				kalkan_told = true
+				_explain_kalkan.call_deferred()
+				break
 	base_max = S["hp"]
 	base_max = int(base_max * (1.0 if daily else HP_MULT[mini(level, 5)]))
 	base_hp = base_max
@@ -1402,6 +1443,14 @@ func _process(dt: float) -> void:
 	ring.rotation.y += dt * 3.0
 	for g in gates:
 		g["ct"] += dt
+		g["cool"] = maxf(0.0, g.get("cool", 0.0) - dt)
+		var cl0: Label3D = g["cl"]
+		if g["op"] in ["okcu", "kalkan", "dev"] and cl0.modulate.a > 0.0:
+			g["shown"] = g.get("shown", 0.0) + dt
+			if g["shown"] > 0.8:
+				cl0.modulate.a = 0.0
+				g["shown"] = 0.0
+				g["cool"] = 2.5
 		if g["ct"] > 0.9:
 			var cl: Label3D = g["cl"]
 			cl.modulate.a = maxf(0.0, cl.modulate.a - dt * 2.5)
@@ -1626,16 +1675,17 @@ func _sim(dt: float) -> void:
 				g["ct"] = 0.0
 				var cl: Label3D = g["cl"]
 				var tot: int = g["tot"]
+				var txtop: bool = g["op"] in ["okcu", "kalkan", "dev"]
 				match g["op"]:
-					"okcu": cl.text = "%d OKÇU" % tot
-					"kalkan": cl.text = "%d KALKAN" % tot
-					"dev": cl.text = "+%d DEV" % tot
+					"okcu": cl.text = "OKÇU!"
+					"kalkan": cl.text = "+1 CAN"
+					"dev": cl.text = "+DEV"
 					_: cl.text = ("+%d" % tot) if tot >= 0 else str(tot)
 				var clv: int = g.get("combo", 0)
 				if clv < 3 and tot >= [30, 80, 160][clv]:
 					g["combo"] = clv + 1
 					_combo(["HARİKA!", "MUHTEŞEM!", "EFSANE!"][clv])
-				cl.modulate.a = 1.0
+				if not txtop or g["cool"] <= 0.0: cl.modulate.a = 1.0
 				cl.scale = Vector3.ONE * 1.35
 				create_tween().tween_property(cl, "scale", Vector3.ONE, 0.15)
 				nd.scale = Vector3(1.12, 1.12, 1.12)
@@ -1781,7 +1831,6 @@ func _sim(dt: float) -> void:
 		var low := not menu_mode and not bench and ammo < start_ammo * 0.25
 		ammo_warn.visible = low
 		if low:
-			if hud_crow: ammo_warn.position = Vector2(30, hud_crow.get_global_rect().position.y)
 			ammo_warn.modulate.a = 0.65 + 0.35 * sin(t * 6.0)
 	if ammo_pop and ammo_pop_t <= 0.0 and ammo_pop.modulate.a > 0.0:
 		ammo_pop.modulate.a = maxf(0.0, ammo_pop.modulate.a - dt * 4.0)
@@ -1822,15 +1871,16 @@ func _ammo_popup(_x: float, _z: float, add: int) -> void:
 	ammo_pop.scale = Vector2.ONE * 1.2
 	ammo_pop.create_tween().tween_property(ammo_pop, "scale", Vector2.ONE, 0.1)
 
-func _banner(txt: String, col: Color) -> void:
+func _banner(txt: String, col: Color, hold := 0.35, fsize := 60) -> void:
 	# kucuk, kisa, ust HUD'un hemen altinda; yenisi eskisinin yerine gecer (yigilma yok)
 	if menu_mode or banner == null: return
-	var y := 330.0
-	if hud_crow: y = hud_crow.get_global_rect().end.y + 8.0
+	var y := 270.0
+	if hud_crow: y = hud_crow.get_global_rect().position.y
 	banner.text = txt
 	banner.add_theme_color_override("font_color", col)
-	banner.position = Vector2(0, y)
-	banner.size = Vector2(get_viewport().get_visible_rect().size.x, 80)
+	banner.add_theme_font_size_override("font_size", fsize)
+	banner.position = Vector2(20, y)
+	banner.size = Vector2(maxf(400.0, (hud_coin.get_parent() as Control).get_global_rect().position.x - 40.0) if hud_coin else 780.0, 80)
 	banner.pivot_offset = banner.size * 0.5
 	banner.visible = true
 	banner.modulate.a = 1.0
@@ -1841,9 +1891,13 @@ func _banner(txt: String, col: Color) -> void:
 	banner.set_meta("tws", [tw])
 	tw.tween_property(banner, "scale", Vector2.ONE * 1.08, 0.1).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(banner, "scale", Vector2.ONE, 0.06)
-	tw.tween_interval(0.35)
+	tw.tween_interval(hold)
 	tw.tween_property(banner, "modulate:a", 0.0, 0.2)
 	tw.tween_callback(func() -> void: banner.visible = false)
+
+func _explain_kalkan() -> void:
+	await get_tree().create_timer(0.3, true, false, true).timeout
+	_banner("Sarı KALKAN kapısı: geçen askerine +1 can", Color(1.0, 0.85, 0.2), 1.3, 34)
 
 func _clear_fx() -> void:
 	# onceki kosudan kalan tum yazilar/afisler temizlenir (yeni bolum, tekrar dene, menu)
@@ -1899,8 +1953,8 @@ func _base_destroyed() -> void:
 	var tw := create_tween()
 	tw.tween_property(bn, "scale", bn.scale * Vector3(1.15, 0.2, 1.15), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tw.tween_callback(bn.hide)
-	coins += 15
-	kale_coins += 15
+	coins += 5 if is_replay else 15
+	kale_coins += 5 if is_replay else 15
 	if sec + 1 >= bases.size():
 		_win()
 		return
@@ -1917,8 +1971,8 @@ func _base_destroyed() -> void:
 	_update_titles()
 	_setup_section()
 	var tw2 := create_tween()
-	tw2.tween_interval(0.6)
-	tw2.tween_property(self, "sec_off", -sec * SEC_LEN, 2.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw2.tween_interval(0.05)
+	tw2.tween_property(self, "sec_off", -sec * SEC_LEN, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw2.tween_callback(func() -> void: advancing = false)
 
 func _render() -> void:
@@ -2051,14 +2105,22 @@ func _win() -> void:
 	var c_lvl := 40 + 30 * (level + 1)
 	var c_ammo := mini(ammo, 150)
 	var c_time := int(time_left)
-	earned = c_lvl + c_ammo + c_time
-	coins += earned
 	var tmax: float = cur_L["time"]
 	var s_time := time_left >= tmax * 0.3
 	var s_ammo := ammo >= start_ammo * 0.25
 	var st := 1 + int(s_time) + int(s_ammo)
+	var full := c_lvl + c_ammo + c_time
+	var new_st := maxi(0, st - int(stars_best.get(level, 0)))
+	if is_replay:
+		# tekrar oynama: temel odulun %30'u + yeni kazanilan her yildiz icin tam pay
+		earned = int(round(full * 0.3)) + int(round(full / 3.0 * new_st))
+	else:
+		earned = full
+	coins += earned
 	hint_seen = true
 	win_lines = "1. yıldız: Kale yıkıldı\n2. yıldız: %d+ sn kalsın (%d) %s\n3. yıldız: %d+ mermi kalsın (%d) %s\nBölüm %d + Mermi %d + Süre %d + Kaleler %d" % [int(tmax * 0.3), c_time, "OK" if s_time else "X", int(start_ammo * 0.25), ammo, "OK" if s_ammo else "X", c_lvl, c_ammo, c_time, kale_coins]
+	if is_replay:
+		win_lines = win_lines.replace("\nBölüm %d +" % c_lvl, "\nTekrar: %%30 (yeni yıldız %d) · Bölüm %d +" % [new_st, c_lvl])
 	stars_best[level] = maxi(int(stars_best.get(level, 0)), st)
 	doubled = false
 	levels_since_ad += 1
@@ -2269,11 +2331,13 @@ func _build_ui() -> void:
 	ammo_pop.size = Vector2(260, 56)
 	ammo_pop.position = Vector2(810, 170)
 	ammo_pop.modulate.a = 0.0
-	ammo_warn = _label("Mermi azalıyor —\nkapılardan geç, düşman vur", 34, hud, Color(1.0, 0.6, 0.25))
-	ammo_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	ammo_warn = _label("Mermi azalıyor — kapılardan geç, düşman vur", 38, hud, Color(1.0, 0.6, 0.25))
+	ammo_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ammo_warn.add_theme_constant_override("outline_size", 14)
 	ammo_warn.add_theme_font_override("font", bold)
-	ammo_warn.size = Vector2(700, 96)
+	ammo_warn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	ammo_warn.offset_top = -150
+	ammo_warn.offset_bottom = -90
 	ammo_warn.visible = false
 	banner = _label("", 64, hud, Color.WHITE)
 	banner.add_theme_font_override("font", bold)
@@ -2511,7 +2575,7 @@ func _refresh_loadout() -> void:
 			b = _btn("Sv.%d: %d coin" % [int(card_lv[ty]) + 2, cost] if card_lv[ty] < 5 else "MAKS", Color(0.55, 0.2, 0.9), h, func() -> void: _up_card(tyy))
 			b.disabled = coins < cost or card_lv[ty] >= 5
 		b.custom_minimum_size = Vector2(300, 90)
-		b.add_theme_font_size_override("font_size", 38)
+		b.add_theme_font_size_override("font_size", 38 if b.text.length() <= 12 else 30)
 
 func _buy_card(ty: int) -> void:
 	if coins >= CARD_COST[ty] and not owned[ty]:
@@ -2820,7 +2884,7 @@ func _build_alive() -> void:
 			"r": rng.randf_range(1.5, 3.0), "dz": rng.randf_range(-16, 4), "cx": (-1.0 if k % 2 == 0 else 1.0) * rng.randf_range(7, 12), "fl": rng.randf_range(16, 22), "bf": true})
 	# ortam parcaciklari (yaprak / kum / kar)
 	amb_parts = CPUParticles3D.new()
-	amb_parts.amount = 90
+	amb_parts.amount = 30 if is_web else 90
 	amb_parts.lifetime = 7.0
 	amb_parts.preprocess = 7.0
 	amb_parts.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
