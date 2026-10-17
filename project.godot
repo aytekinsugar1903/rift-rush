@@ -16,7 +16,7 @@ window/size/window_width_override=540
 window/size/window_height_override=960
 window/handheld/orientation=1
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+window/stretch/aspect="keep_height"
 
 [input_devices]
 pointing/emulate_touch_from_mouse=false

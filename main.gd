@@ -1,24 +1,51 @@
 extends Node3D
-## Rift Rush - MVP. Tum sahne kodla kuruluyor (tek dosya, kolay iterasyon).
+## Rift Rush - MVP v2 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
 
-const LANE := 4.6
+const LANE := 4.4
 const BASE_Z := -38.0
+const SEC_LEN := 52.0
 const MAXP := 1500
 const MAXE := 400
-const PSPEED := 7.5
+const PSPEED := 7.0
 const CYAN := Color(0.15, 0.95, 1.0)
 const ENEMY := Color(1.0, 0.38, 0.12)
 const PURPLE := Color(0.65, 0.2, 1.0)
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 60, "time": 60.0, "hp": 150, "spawn": 2.2, "brute": 0.0,
-	 "gates": [[-10.0, -2.3, 4.2, "x2", 0.0], [-10.0, 2.3, 4.2, "+10", 0.0], [-22.0, 0.0, 3.6, "x3", 1.6]]},
-	{"ammo": 70, "time": 60.0, "hp": 450, "spawn": 1.3, "brute": 0.1,
-	 "gates": [[-8.0, -2.3, 4.2, "x2", 0.0], [-8.0, 2.3, 4.2, "-5", 0.0], [-16.0, 0.0, 3.2, "+10", 2.2], [-25.0, -2.3, 4.2, "x3", 0.0], [-25.0, 2.3, 4.2, "x2", 0.0]]},
-	{"ammo": 80, "time": 75.0, "hp": 1100, "spawn": 0.75, "brute": 0.2,
-	 "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-14.0, -2.3, 4.2, "x2", 0.0], [-14.0, 2.3, 4.2, "x2", 0.0], [-21.0, 0.0, 3.0, "x3", 2.4], [-28.0, -3.0, 3.0, "x2", 0.0], [-28.0, 0.0, 3.0, "+10", 0.0], [-28.0, 3.0, 3.0, "-5", 0.0]]},
+	{"ammo": 80, "time": 100.0, "sections": [
+		{"hp": 90, "spawn": 2.6, "brute": 0.0, "gates": [[-10.0, -2.2, 4.0, "x2", 0.0], [-10.0, 2.2, 4.0, "+10", 0.0], [-23.0, 0.0, 3.6, "x3", 1.4]]},
+		{"hp": 220, "spawn": 1.9, "brute": 0.1, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.4, "+10", 2.0], [-27.0, 0.0, 3.6, "x3", 1.2]]}]},
+	{"ammo": 100, "time": 120.0, "sections": [
+		{"hp": 160, "spawn": 1.8, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
+		{"hp": 280, "spawn": 1.4, "brute": 0.12, "gates": [[-8.0, 0.0, 3.2, "+10", 2.2], [-17.0, -2.2, 4.0, "x3", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-27.0, 0.0, 3.0, "-5", 2.4]]},
+		{"hp": 520, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x2", 0.0], [-18.0, 0.0, 3.2, "x3", 2.4], [-27.0, -2.8, 2.8, "x2", 0.0], [-27.0, 0.0, 2.8, "+10", 0.0], [-27.0, 2.8, 2.8, "-5", 0.0]]}]},
+	{"ammo": 120, "time": 140.0, "sections": [
+		{"hp": 260, "spawn": 1.2, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "x2", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
+		{"hp": 480, "spawn": 0.9, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "x2", 2.6], [-27.0, -2.8, 2.8, "x2", 0.0], [-27.0, 0.0, 2.8, "-5", 1.0], [-27.0, 2.8, 2.8, "+10", 0.0]]},
+		{"hp": 1000, "spawn": 0.7, "brute": 0.3, "gates": [[-8.0, 0.0, 3.0, "x2", 2.6], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 4.0, "-5", 0.0], [-25.0, 0.0, 3.0, "x2", 2.4]]}]},
 ]
+
+const UNIT_SHADER := """
+shader_type spatial;
+uniform vec3 col;
+uniform float emit = 0.5;
+uniform float speed = 13.0;
+void vertex() {
+	float ph = float(INSTANCE_ID) * 1.73;
+	float s = sin(TIME * speed + ph);
+	VERTEX.y += abs(s) * 0.16;
+	VERTEX.x += s * 0.06 * VERTEX.y;
+	VERTEX.z += cos(TIME * speed + ph) * 0.05 * VERTEX.y;
+}
+void fragment() {
+	vec3 a = COLOR.rgb * col;
+	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.5);
+	ALBEDO = a;
+	ROUGHNESS = 0.35;
+	EMISSION = a * emit + col * rim * 1.4;
+}
+"""
 
 var px := PackedFloat32Array()
 var pz := PackedFloat32Array()
@@ -36,8 +63,12 @@ var buckets: Array = []
 var dead := PackedByteArray()
 
 var gates: Array = []
+var bases: Array = []
 var level := 0
+var sec := 0
+var sec_off := 0.0
 var playing := false
+var advancing := false
 var ammo := 0
 var time_left := 0.0
 var base_hp := 0
@@ -52,6 +83,11 @@ var pop_t := 0.0
 var end_grace := 0.0
 var earned := 0
 var doubled := false
+var front := 0.0
+var cam_push := 0.0
+var flash_t := 0.0
+var hint_seen := false
+var drag_sum := 0.0
 
 var coins := 0
 var unlocked := 1
@@ -60,18 +96,25 @@ var rate_lv := 0
 var cam: Camera3D
 var cannon: Node3D
 var barrel: Node3D
-var base_node: MeshInstance3D
-var rift: MeshInstance3D
+var flash: MeshInstance3D
+var flash_light: OmniLight3D
+var ring: MeshInstance3D
 var parts: Array = []
+var chunks: Array = []
 var part_i := 0
-var gate_root: Node3D
+var chunk_i := 0
+var level_root: Node3D
+var crystals: Array = []
 
 var hud: Control
 var lbl_level: Label
 var lbl_time: Label
 var lbl_ammo: Label
 var lbl_units: Label
-var hp_bar: ProgressBar
+var sec_box: HBoxContainer
+var sec_bars: Array = []
+var hint: Control
+var hand: Control
 var menu: Control
 var lbl_coins: Label
 var lvl_btns: Array = []
@@ -84,9 +127,10 @@ var btn_next: Button
 
 var bench := false
 var bench_len := 12.0
-var bench_shot := ""
+var bench_shots: Array = []
 var ft: Array = []
 var max_units := 0
+var cpu_us: Array = []
 
 func _ready() -> void:
 	_load()
@@ -97,9 +141,11 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0 and args[0] == "bench":
 		bench = true
+		hint_seen = true
 		if args.size() > 1: bench_len = float(args[1])
-		if args.size() > 2: bench_shot = args[2]
-		start_level(2)
+		for k in range(2, args.size() - 1, 2):
+			bench_shots.append([float(args[k]), args[k + 1]])
+		start_level(int(OS.get_environment("BENCH_LEVEL")) if OS.get_environment("BENCH_LEVEL") != "" else 2)
 		ammo = 99999
 		rate_lv = 30
 		var mb := InputEventMouseButton.new()
@@ -112,135 +158,200 @@ func _ready() -> void:
 		get_viewport().get_texture().get_image().save_png(args[1])
 		get_tree().quit()
 
-# ---------------- dunya ----------------
-func _mat(c: Color, emit := 0.6, alpha := 1.0) -> StandardMaterial3D:
+# ---------------- yardimcilar ----------------
+func _mat(c: Color, emit := 0.6, alpha := 1.0, metal := 0.0, rough := 0.5) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color(c.r, c.g, c.b, alpha)
+	m.metallic = metal
+	m.roughness = rough
 	if emit > 0.0:
 		m.emission_enabled = true
 		m.emission = c
 		m.emission_energy_multiplier = emit
 	if alpha < 1.0:
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m
 
-func _box(size: Vector3, pos: Vector3, m: Material, parent: Node = self) -> MeshInstance3D:
+func _mesh(m: Mesh, pos: Vector3, mat: Material, parent: Node, rot := Vector3.ZERO, shadow := true) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
-	var b := BoxMesh.new()
-	b.size = size
-	mi.mesh = b
-	mi.material_override = m
+	mi.mesh = m
+	mi.material_override = mat
 	mi.position = pos
+	mi.rotation_degrees = rot
+	if not shadow: mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(mi)
 	return mi
 
+func _box(size: Vector3, pos: Vector3, m: Material, parent: Node = self, shadow := true) -> MeshInstance3D:
+	var b := BoxMesh.new()
+	b.size = size
+	return _mesh(b, pos, m, parent, Vector3.ZERO, shadow)
+
+func _cyl(r_top: float, r_bot: float, h: float, pos: Vector3, m: Material, parent: Node, segs := 12, rot := Vector3.ZERO) -> MeshInstance3D:
+	var c := CylinderMesh.new()
+	c.top_radius = r_top
+	c.bottom_radius = r_bot
+	c.height = h
+	c.radial_segments = segs
+	c.rings = 1
+	return _mesh(c, pos, m, parent, rot)
+
+func _add_part(st: SurfaceTool, m: PrimitiveMesh, xf: Transform3D, c: Color) -> void:
+	var a := m.get_mesh_arrays()
+	var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+	var n: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+	var idx: PackedInt32Array = a[Mesh.ARRAY_INDEX]
+	for i in idx:
+		st.set_color(c)
+		st.set_normal((xf.basis * n[i]).normalized())
+		st.add_vertex(xf * v[i])
+
+func _unit_mesh(col: Color) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var body := CapsuleMesh.new(); body.radius = 0.27; body.height = 0.85; body.radial_segments = 6; body.rings = 1
+	_add_part(st, body, Transform3D(Basis(), Vector3(0, 0.45, 0)), Color.WHITE)
+	var head := SphereMesh.new(); head.radius = 0.25; head.height = 0.5; head.radial_segments = 6; head.rings = 3
+	_add_part(st, head, Transform3D(Basis(), Vector3(0, 1.05, 0)), Color.WHITE)
+	var visor := BoxMesh.new(); visor.size = Vector3(0.38, 0.11, 0.1)
+	_add_part(st, visor, Transform3D(Basis(), Vector3(0, 1.07, -0.21)), Color(0.08, 0.08, 0.12))
+	var arm := BoxMesh.new(); arm.size = Vector3(0.13, 0.45, 0.15)
+	for s in [-1, 1]:
+		_add_part(st, arm, Transform3D(Basis(Vector3(0, 0, 1), s * 0.35), Vector3(s * 0.33, 0.55, 0)), Color(0.75, 0.75, 0.8))
+	var leg := BoxMesh.new(); leg.size = Vector3(0.14, 0.25, 0.16)
+	for s in [-1, 1]:
+		_add_part(st, leg, Transform3D(Basis(), Vector3(s * 0.12, 0.1, 0)), Color(0.5, 0.5, 0.6))
+	var mesh := st.commit()
+	var sm := ShaderMaterial.new()
+	var sh := Shader.new()
+	sh.code = UNIT_SHADER
+	sm.shader = sh
+	sm.set_shader_parameter("col", Vector3(col.r, col.g, col.b))
+	mesh.surface_set_material(0, sm)
+	return mesh
+
+func _particles(mesh: Mesh, amount: int, life: float, vmin: float, vmax: float, grav: float) -> CPUParticles3D:
+	var p := CPUParticles3D.new()
+	p.emitting = false
+	p.one_shot = true
+	p.amount = amount
+	p.lifetime = life
+	p.explosiveness = 1.0
+	p.mesh = mesh
+	p.direction = Vector3(0, 1, 0)
+	p.spread = 70
+	p.initial_velocity_min = vmin
+	p.initial_velocity_max = vmax
+	p.gravity = Vector3(0, grav, 0)
+	p.angular_velocity_min = -400
+	p.angular_velocity_max = 400
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.5
+	add_child(p)
+	return p
+
+# ---------------- dunya ----------------
 func _build_world() -> void:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.07, 0.03, 0.14)
+	var sky := Sky.new()
+	var psm := ProceduralSkyMaterial.new()
+	psm.sky_top_color = Color(0.12, 0.03, 0.3)
+	psm.sky_horizon_color = Color(0.75, 0.25, 0.85)
+	psm.ground_horizon_color = Color(0.55, 0.15, 0.7)
+	psm.ground_bottom_color = Color(0.05, 0.02, 0.12)
+	sky.sky_material = psm
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.75, 0.7, 0.95)
-	env.ambient_light_energy = 0.7
+	env.ambient_light_color = Color(0.6, 0.55, 0.9)
+	env.ambient_light_energy = 0.35
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.glow_enabled = true
-	env.glow_intensity = 0.9
-	env.glow_bloom = 0.15
+	env.glow_intensity = 0.8
+	env.glow_bloom = 0.1
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.45, 0.15, 0.6)
+	env.fog_density = 0.0035
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-55, -30, 0)
-	sun.light_energy = 1.1
+	sun.rotation_degrees = Vector3(-50, -35, 0)
+	sun.light_energy = 1.3
+	sun.light_color = Color(1.0, 0.92, 0.95)
+	sun.shadow_enabled = OS.get_environment("NOSHADOW") == ""
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_max_distance = 45.0
 	add_child(sun)
 
 	cam = Camera3D.new()
-	cam.keep_aspect = Camera3D.KEEP_WIDTH
-	cam.fov = 44
-	cam.position = Vector3(0, 34, 8)
+	cam.keep_aspect = Camera3D.KEEP_HEIGHT
+	cam.fov = 62
+	cam.far = 220
 	add_child(cam)
-	cam.look_at(Vector3(0, 0, -19))
 
-	_box(Vector3(11, 0.2, 52), Vector3(0, -0.1, -18), _mat(Color(0.12, 0.1, 0.28), 0.0))
-	for i in 13:
-		_box(Vector3(9.6, 0.02, 0.12), Vector3(0, 0.01, 2.0 - i * 3.3), _mat(Color(0.3, 0.25, 0.7), 0.4))
-	for s in [-1, 1]:
-		_box(Vector3(0.3, 0.6, 52), Vector3(s * 5.2, 0.3, -18), _mat(CYAN, 1.2))
+	level_root = Node3D.new()
+	add_child(level_root)
 
-	base_node = _box(Vector3(7, 3, 2), Vector3(0, 1.5, BASE_Z), _mat(ENEMY, 0.5))
-	_box(Vector3(1.6, 1.2, 1.6), Vector3(-2.6, 2.1, 0), _mat(Color(0.9, 0.2, 0.1), 0.8), base_node)
-	_box(Vector3(1.6, 1.2, 1.6), Vector3(2.6, 2.1, 0), _mat(Color(0.9, 0.2, 0.1), 0.8), base_node)
-	rift = MeshInstance3D.new()
-	var tor := TorusMesh.new()
-	tor.inner_radius = 2.4
-	tor.outer_radius = 3.0
-	rift.mesh = tor
-	rift.material_override = _mat(PURPLE, 3.0)
-	rift.position = Vector3(0, 4.2, BASE_Z - 2.2)
-	rift.rotation_degrees = Vector3(90, 0, 0)
-	add_child(rift)
-	var core := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 2.4
-	cyl.bottom_radius = 2.4
-	cyl.height = 0.05
-	core.mesh = cyl
-	core.material_override = _mat(Color(0.35, 0.05, 0.6), 1.5, 0.75)
-	rift.add_child(core)
-	var ol := OmniLight3D.new()
-	ol.light_color = PURPLE
-	ol.light_energy = 3.0
-	ol.omni_range = 12
-	ol.position = Vector3(0, 4, BASE_Z)
-	add_child(ol)
+	# kenar manzara (kalici)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var rock := SphereMesh.new(); rock.radial_segments = 6; rock.rings = 3
+	var rmat := _mat(Color(0.22, 0.14, 0.35), 0.0, 1.0, 0.0, 0.9)
+	var cry := CylinderMesh.new(); cry.top_radius = 0.0; cry.bottom_radius = 0.5; cry.height = 2.4; cry.radial_segments = 5; cry.rings = 1
+	var cmats := [_mat(PURPLE, 2.2), _mat(Color(0.3, 0.6, 1.0), 2.0), _mat(Color(1.0, 0.3, 0.8), 2.0)]
+	for i in 70:
+		var s := -1.0 if i % 2 == 0 else 1.0
+		var z := 14.0 - i * 3.4
+		var r := _mesh(rock, Vector3(s * rng.randf_range(7.0, 16.0), rng.randf_range(-3.0, -0.5), z + rng.randf_range(-1.5, 1.5)), rmat, self, Vector3(rng.randf() * 90, rng.randf() * 180, 0), false)
+		r.scale = Vector3.ONE * rng.randf_range(1.5, 4.0)
+		if i % 2 == 0 or i % 3 == 0:
+			var c := _mesh(cry, Vector3(s * rng.randf_range(7.5, 14.0), rng.randf_range(1.0, 5.0), z), cmats[i % 3], self, Vector3(rng.randf_range(-25, 25), 0, rng.randf_range(-25, 25)), false)
+			c.scale = Vector3.ONE * rng.randf_range(0.7, 1.8)
+			crystals.append([c, c.position.y, rng.randf() * 6.0])
 
 	cannon = Node3D.new()
-	cannon.position = Vector3(0, 0, 1.6)
 	add_child(cannon)
-	var cb := MeshInstance3D.new()
-	var cbm := CylinderMesh.new()
-	cbm.top_radius = 0.8
-	cbm.bottom_radius = 1.0
-	cbm.height = 0.6
-	cb.mesh = cbm
-	cb.material_override = _mat(Color(0.2, 0.3, 0.5), 0.2)
-	cb.position.y = 0.3
-	cannon.add_child(cb)
+	_box(Vector3(10.0, 0.25, 0.6), Vector3(0, 0.12, 0), _mat(Color(0.35, 0.4, 0.55), 0.0, 1.0, 0.8, 0.3), cannon)
+	_box(Vector3(10.0, 0.08, 0.1), Vector3(0, 0.27, 0), _mat(CYAN, 2.0), cannon)
 	barrel = Node3D.new()
-	barrel.position = Vector3(0, 0.8, 0)
 	cannon.add_child(barrel)
-	_box(Vector3(0.7, 0.7, 1.8), Vector3(0, 0, -0.6), _mat(CYAN, 1.0), barrel)
+	var dark := _mat(Color(0.2, 0.24, 0.35), 0.0, 1.0, 0.85, 0.25)
+	_cyl(1.0, 1.25, 0.6, Vector3(0, 0.55, 0), dark, barrel, 16)
+	ring = _mesh(TorusMesh.new(), Vector3(0, 0.9, 0), _mat(CYAN, 3.0), barrel)
+	(ring.mesh as TorusMesh).inner_radius = 0.8
+	(ring.mesh as TorusMesh).outer_radius = 1.0
+	_mesh(SphereMesh.new(), Vector3(0, 1.1, 0), dark, barrel).scale = Vector3(1.6, 1.2, 1.6)
+	_cyl(0.42, 0.55, 2.2, Vector3(0, 1.3, -1.0), _mat(Color(0.9, 0.95, 1.0), 0.0, 1.0, 0.9, 0.2), barrel, 14, Vector3(-80, 0, 0))
+	_cyl(0.5, 0.5, 0.25, Vector3(0, 1.45, -2.05), _mat(CYAN, 3.0), barrel, 14, Vector3(-80, 0, 0))
+	flash = _mesh(SphereMesh.new(), Vector3(0, 1.5, -2.5), _mat(Color(0.6, 1.0, 1.0), 6.0), barrel, Vector3.ZERO, false)
+	flash.scale = Vector3.ZERO
+	flash_light = OmniLight3D.new()
+	flash_light.light_color = CYAN
+	flash_light.omni_range = 6
+	flash_light.position = Vector3(0, 1.6, -2.6)
+	barrel.add_child(flash_light)
 
-	gate_root = Node3D.new()
-	add_child(gate_root)
-
-	var cap := CapsuleMesh.new()
-	cap.radius = 0.17
-	cap.height = 0.6
-	cap.radial_segments = 6
-	cap.rings = 2
-	cap.material = _mat(CYAN, 1.3)
+	var pmi := MultiMeshInstance3D.new()
 	pmm = MultiMesh.new()
 	pmm.transform_format = MultiMesh.TRANSFORM_3D
-	pmm.mesh = cap
+	pmm.mesh = _unit_mesh(CYAN)
 	pmm.instance_count = MAXP
 	pmm.visible_instance_count = 0
-	var pmi := MultiMeshInstance3D.new()
 	pmi.multimesh = pmm
+	pmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pmi.extra_cull_margin = 400.0
 	add_child(pmi)
-	var cap2 := CapsuleMesh.new()
-	cap2.radius = 0.22
-	cap2.height = 0.7
-	cap2.radial_segments = 6
-	cap2.rings = 2
-	cap2.material = _mat(ENEMY, 1.0)
+	var emi := MultiMeshInstance3D.new()
 	emm = MultiMesh.new()
 	emm.transform_format = MultiMesh.TRANSFORM_3D
-	emm.mesh = cap2
+	emm.mesh = _unit_mesh(ENEMY)
 	emm.instance_count = MAXE
 	emm.visible_instance_count = 0
-	var emi := MultiMeshInstance3D.new()
 	emi.multimesh = emm
+	emi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	emi.extra_cull_margin = 400.0
 	add_child(emi)
 	pbuf.resize(MAXP * 12)
 	for i in MAXP:
@@ -250,97 +361,173 @@ func _build_world() -> void:
 	var pm := StandardMaterial3D.new()
 	pm.vertex_color_use_as_albedo = true
 	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	var pmesh := BoxMesh.new()
-	pmesh.size = Vector3(0.14, 0.14, 0.14)
-	pmesh.material = pm
-	for i in 20:
-		var p := CPUParticles3D.new()
-		p.emitting = false
-		p.one_shot = true
-		p.amount = 20
-		p.lifetime = 0.55
-		p.explosiveness = 1.0
-		p.mesh = pmesh
-		p.direction = Vector3(0, 1, 0)
-		p.spread = 70
-		p.initial_velocity_min = 3.0
-		p.initial_velocity_max = 7.0
-		p.gravity = Vector3(0, -14, 0)
-		p.scale_amount_min = 0.6
-		p.scale_amount_max = 1.4
-		add_child(p)
-		parts.append(p)
+	var pmesh := BoxMesh.new(); pmesh.size = Vector3(0.18, 0.18, 0.18); pmesh.material = pm
+	for i in 24:
+		parts.append(_particles(pmesh, 16, 0.55, 3.0, 7.0, -14.0))
+	var cm := StandardMaterial3D.new()
+	cm.vertex_color_use_as_albedo = true
+	var cmesh := BoxMesh.new(); cmesh.size = Vector3(0.45, 0.35, 0.4); cmesh.material = cm
+	for i in 10:
+		chunks.append(_particles(cmesh, 10, 1.1, 5.0, 10.0, -20.0))
 
 func burst(pos: Vector3, c: Color, amount := 20) -> void:
 	var p: CPUParticles3D = parts[part_i]
 	part_i = (part_i + 1) % parts.size()
 	p.position = pos
 	p.color = c
-	p.amount = amount
+	p.restart()
+
+func chunk_burst(pos: Vector3, c: Color) -> void:
+	var p: CPUParticles3D = chunks[chunk_i]
+	chunk_i = (chunk_i + 1) % chunks.size()
+	p.position = pos
+	p.color = c
 	p.restart()
 
 func pop_text(pos: Vector3, txt: String, c: Color, big := false) -> void:
 	var l := Label3D.new()
 	l.text = txt
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.font_size = 140 if big else 110
-	l.pixel_size = 0.008
-	l.outline_size = 28
+	l.font_size = 170 if big else 130
+	l.pixel_size = 0.009
+	l.outline_size = 32
 	l.modulate = c
 	l.no_depth_test = true
 	l.position = pos
 	add_child(l)
 	l.scale = Vector3.ONE * 0.3
 	var tw := create_tween()
-	tw.tween_property(l, "scale", Vector3.ONE * 1.3, 0.12).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(l, "scale", Vector3.ONE * 1.4, 0.12).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(l, "scale", Vector3.ONE, 0.1)
-	tw.parallel().tween_property(l, "position", pos + Vector3(0, 2.0, 0), 0.7)
+	tw.parallel().tween_property(l, "position", pos + Vector3(0, 2.2, 0), 0.7)
 	tw.tween_property(l, "modulate:a", 0.0, 0.25)
 	tw.tween_callback(l.queue_free)
 
+func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
+	var good: bool = not String(gd[3]).begins_with("-")
+	var col: Color = Color(0.15, 1.0, 0.45) if good else Color(1.0, 0.18, 0.28)
+	var w: float = gd[2]
+	var n := Node3D.new()
+	n.position = Vector3(gd[1], 0, z_world)
+	level_root.add_child(n)
+	var frame := _mat(col.darkened(0.35), 0.4, 1.0, 0.6, 0.25)
+	for s in [-1, 1]:
+		_box(Vector3(0.45, 3.2, 0.6), Vector3(s * (w * 0.5), 1.6, 0), frame, n)
+		_box(Vector3(0.6, 0.3, 0.8), Vector3(s * (w * 0.5), 0.15, 0), frame, n)
+	_box(Vector3(w + 0.45, 0.5, 0.6), Vector3(0, 3.2, 0), frame, n)
+	var pmat := _mat(col, 0.8, 0.42)
+	_box(Vector3(w - 0.4, 2.9, 0.12), Vector3(0, 1.5, 0), pmat, n, false)
+	var lb := Label3D.new()
+	lb.text = String(gd[3]).replace("x", "×")
+	lb.font_size = 220
+	lb.pixel_size = 0.0105
+	lb.outline_size = 44
+	lb.outline_modulate = col.darkened(0.6)
+	lb.position = Vector3(0, 1.7, 0.2)
+	lb.rotation_degrees = Vector3(-20, 0, 0)
+	n.add_child(lb)
+	var charge := 10 if gd[3] == "+10" else (5 if gd[3] == "-5" else 0)
+	return {"z": gd[0], "bx": gd[1], "cx": gd[1], "w": w, "op": gd[3], "amp": gd[4], "sec": si, "gi": gi,
+		"charge": charge, "node": n, "pend": 0, "col": col, "ph": randf() * 6.0, "pmat": pmat}
+
+func _make_base(z_world: float, boss: bool) -> Dictionary:
+	var n := Node3D.new()
+	n.position = Vector3(0, 0, z_world)
+	level_root.add_child(n)
+	var body := _mat(Color(0.75, 0.22, 0.12), 0.15, 1.0, 0.4, 0.45)
+	var trim := _mat(Color(0.25, 0.1, 0.12), 0.0, 1.0, 0.7, 0.3)
+	var glow := _mat(Color(1.0, 0.6, 0.15), 3.0)
+	_box(Vector3(6.5, 3.6, 3.0), Vector3(0, 1.8, 0), body, n)
+	_box(Vector3(7.0, 0.5, 3.4), Vector3(0, 3.8, 0), trim, n)
+	for i in 6:
+		_box(Vector3(0.7, 0.6, 0.6), Vector3(-2.9 + i * 1.16, 4.3, 1.4), trim, n)
+	_box(Vector3(1.8, 2.2, 0.3), Vector3(0, 1.1, 1.45), _mat(Color(0.08, 0.03, 0.05), 0.0), n)
+	_box(Vector3(2.2, 0.2, 0.35), Vector3(0, 2.3, 1.5), glow, n)
+	for s in [-1, 1]:
+		_cyl(0.95, 1.1, 5.4, Vector3(s * 3.3, 2.7, 0), body, n, 10)
+		_cyl(0.0, 1.35, 1.8, Vector3(s * 3.3, 6.3, 0), trim, n, 10)
+		_box(Vector3(0.5, 0.7, 0.2), Vector3(s * 3.3, 3.6, 1.0), glow, n)
+		_box(Vector3(0.6, 0.6, 0.2), Vector3(s * 1.7, 2.6, 1.55), glow, n)
+	if boss:
+		_cyl(1.3, 1.6, 4.0, Vector3(0, 5.8, -0.4), body, n, 10)
+		_cyl(0.0, 1.9, 2.4, Vector3(0, 9.0, -0.4), trim, n, 10)
+		_box(Vector3(1.2, 0.8, 0.2), Vector3(0, 6.2, 1.0), glow, n)
+		n.scale = Vector3.ONE * 1.25
+	# yarik (dusmanlar buradan gelir)
+	var rift := _mesh(TorusMesh.new(), Vector3(0, 5.2 if not boss else 7.0, -3.2), _mat(PURPLE, 3.5), n, Vector3(90, 0, 0), false)
+	(rift.mesh as TorusMesh).inner_radius = 2.6
+	(rift.mesh as TorusMesh).outer_radius = 3.2
+	var core := _cyl(2.6, 2.6, 0.05, Vector3.ZERO, _mat(Color(0.35, 0.05, 0.6), 1.5, 0.75), rift, 24)
+	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var ol := OmniLight3D.new()
+	ol.light_color = PURPLE
+	ol.light_energy = 3.0
+	ol.omni_range = 14
+	ol.position = Vector3(0, 4, -1)
+	n.add_child(ol)
+	return {"node": n, "body": body, "rift": rift, "cracks": 0}
+
 # ---------------- seviye ----------------
+func _clear_units() -> void:
+	px.clear(); pz.clear(); pdx.clear(); pmask.clear()
+	ex.clear(); ez.clear(); ehp.clear(); esc.clear()
+
 func start_level(i: int) -> void:
 	level = i
 	var L: Dictionary = LEVELS[i]
-	px.clear(); pz.clear(); pdx.clear(); pmask.clear()
-	ex.clear(); ez.clear(); ehp.clear(); esc.clear()
-	for g in gates:
-		(g["node"] as Node).queue_free()
+	_clear_units()
+	for c in level_root.get_children():
+		c.queue_free()
 	gates.clear()
-	for gd in L["gates"]:
-		var good: bool = not String(gd[3]).begins_with("-")
-		var col: Color = Color(0.2, 1.0, 0.45) if good else Color(1.0, 0.2, 0.3)
-		var n := Node3D.new()
-		n.position = Vector3(gd[1], 0, gd[0])
-		gate_root.add_child(n)
-		_box(Vector3(gd[2], 2.2, 0.12), Vector3(0, 1.1, 0), _mat(col, 0.0, 0.32), n)
-		for s in [-1, 1]:
-			_box(Vector3(0.2, 2.4, 0.2), Vector3(s * gd[2] * 0.5, 1.2, 0), _mat(col, 1.5), n)
-		var lb := Label3D.new()
-		lb.text = String(gd[3]).replace("x", "×")
-		lb.font_size = 170
-		lb.pixel_size = 0.01
-		lb.outline_size = 30
-		lb.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		lb.position = Vector3(0, 1.3, 0.1)
-		n.add_child(lb)
-		var charge := 10 if gd[3] == "+10" else (5 if gd[3] == "-5" else 0)
-		gates.append({"z": gd[0], "bx": gd[1], "cx": gd[1], "w": gd[2], "op": gd[3], "amp": gd[4],
-			"charge": charge, "node": n, "pend": 0, "col": col, "ph": randf() * 6.0})
+	bases.clear()
+	var secs: Array = L["sections"]
+	# platform
+	var total := SEC_LEN * secs.size() + 30.0
+	_box(Vector3(10.4, 1.2, total), Vector3(0, -0.6, 8.0 - total * 0.5), _mat(Color(0.08, 0.07, 0.2), 0.0, 1.0, 0.3, 0.6), level_root)
+	_box(Vector3(11.4, 0.6, total), Vector3(0, -1.3, 8.0 - total * 0.5), _mat(Color(0.08, 0.05, 0.18), 0.0), level_root)
+	var rail := _mat(CYAN, 1.6)
+	for s in [-1, 1]:
+		_box(Vector3(0.35, 0.5, total), Vector3(s * 5.2, 0.25, 8.0 - total * 0.5), rail, level_root)
+	var tile := _mat(Color(0.14, 0.12, 0.32), 0.0, 1.0, 0.2, 0.5)
+	for k in int(total / 3.0):
+		_box(Vector3(9.6, 0.04, 1.3), Vector3(0, 0.02, 6.0 - k * 3.0), tile, level_root, false)
+	for si in secs.size():
+		var S: Dictionary = secs[si]
+		var off := -si * SEC_LEN
+		var gi := 0
+		for gd in S["gates"]:
+			gates.append(_make_gate(gd, gd[0] + off, si, gi))
+			gi += 1
+		bases.append(_make_base(BASE_Z + off, si == secs.size() - 1))
 	ammo = L["ammo"]
 	time_left = L["time"]
-	base_max = L["hp"]
-	base_hp = base_max
-	base_node.visible = true
-	base_node.scale = Vector3.ONE
-	spawn_t = 1.5
+	sec = 0
+	sec_off = 0.0
+	_setup_section()
 	cannon_x = 0.0
 	end_grace = 0.0
+	advancing = false
 	playing = true
 	menu.visible = false
 	result.visible = false
 	hud.visible = true
-	lbl_level.text = "BÖLÜM %d" % (i + 1)
+	_build_sec_bars(secs.size())
+	_update_titles()
+	cam.position = Vector3(0, 10.5, 12.0)
+	cam_push = 0.0
+	if not hint_seen:
+		hint.visible = true
+		drag_sum = 0.0
+
+func _setup_section() -> void:
+	var S: Dictionary = LEVELS[level]["sections"][sec]
+	base_max = S["hp"]
+	base_hp = base_max
+	spawn_t = 2.0
+
+func _update_titles() -> void:
+	var n: int = LEVELS[level]["sections"].size()
+	lbl_level.text = "BÖLÜM %d • %s" % [level + 1, "BOSS" if sec == n - 1 else "KALE %d/%d" % [sec + 1, n]]
 
 func _fire_rate() -> float:
 	return 6.0 + rate_lv * 1.5
@@ -367,89 +554,121 @@ func _input(e: InputEvent) -> void:
 	elif e is InputEventScreenDrag or (e is InputEventMouseMotion and holding):
 		var w := get_viewport().get_visible_rect().size.x
 		cannon_x = clampf(cannon_x + e.relative.x / w * 14.0, -LANE + 0.4, LANE - 0.4)
+		drag_sum += absf(e.relative.x)
 	elif e is InputEventKey and e.keycode == KEY_SPACE:
 		holding = e.pressed
 
 # ---------------- dongu ----------------
 func _process(dt: float) -> void:
 	t += dt
-	rift.rotation.y += dt * 1.5
+	for c in crystals:
+		(c[0] as Node3D).position.y = c[1] + sin(t * 1.2 + c[2]) * 0.4
+		(c[0] as Node3D).rotation.y += dt * 0.6
+	for b in bases:
+		(b["rift"] as Node3D).rotation.y += dt * 1.5
+	ring.rotation.y += dt * 3.0
 	if bench:
 		ft.append(dt)
 		var mm := InputEventMouseMotion.new()
 		mm.relative = Vector2(cos(t * 0.9) * 3.5 * 0.9 * dt / 14.0 * get_viewport().get_visible_rect().size.x, 0)
 		Input.parse_input_event(mm)
 		max_units = max(max_units, px.size())
-		if bench_shot != "" and t > 6.0:
-			get_viewport().get_texture().get_image().save_png(bench_shot)
-			bench_shot = ""
+		if bench_shots.size() > 0 and t > bench_shots[0][0]:
+			get_viewport().get_texture().get_image().save_png(bench_shots[0][1])
+			bench_shots.pop_front()
 		if t > bench_len:
 			_bench_report()
 			return
-	cannon.position.x = lerpf(cannon.position.x, cannon_x, minf(1.0, dt * 18.0))
-	barrel.scale.z = lerpf(barrel.scale.z, 1.0, minf(1.0, dt * 12.0))
+	# klavye nisan
+	var kd := 0.0
+	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): kd -= 1.0
+	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): kd += 1.0
+	if kd != 0.0 and playing:
+		cannon_x = clampf(cannon_x + kd * 9.0 * dt, -LANE + 0.4, LANE - 0.4)
+		drag_sum += 400 * dt
+	if hint.visible:
+		hand.position.x = 540 - 60 + sin(t * 3.0) * 220
+		if drag_sum > 500.0:
+			hint.visible = false
+			hint_seen = true
+			_save()
+	cannon.position = Vector3(0, 0, sec_off + 1.8)
+	barrel.position.x = lerpf(barrel.position.x, cannon_x, minf(1.0, dt * 18.0))
+	barrel.position.z = lerpf(barrel.position.z, 0.0, minf(1.0, dt * 14.0))
+	flash_t = maxf(0.0, flash_t - dt * 10.0)
+	flash.scale = Vector3.ONE * flash_t * 1.1
+	flash_light.light_energy = flash_t * 4.0
 	trauma = maxf(0.0, trauma - dt * 1.8)
-	var sh := trauma * trauma * 0.6
-	cam.h_offset = randf_range(-sh, sh)
-	cam.v_offset = randf_range(-sh, sh)
-	if playing:
+	# kamera: topun arkasi, alcak acı, ordu ilerledikce ileri itilir
+	cam_push = lerpf(cam_push, clampf(-front * 0.12, 0.0, 3.5), minf(1.0, dt * 2.0))
+	var cz := cannon.position.z
+	var target := Vector3(barrel.position.x * 0.35, 10.5, cz + 11.5 - cam_push)
+	cam.position = cam.position.lerp(target, minf(1.0, dt * 4.0))
+	var sh := trauma * trauma * 0.5
+	cam.look_at(Vector3(barrel.position.x * 0.2, 0, cam.position.z - 22.0) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
+	var t0 := Time.get_ticks_usec()
+	if playing and not advancing:
 		_sim(dt)
 	_render()
+	if bench: cpu_us.append(Time.get_ticks_usec() - t0)
 
 func _sim(dt: float) -> void:
-	var L: Dictionary = LEVELS[level]
+	var S: Dictionary = LEVELS[level]["sections"][sec]
 	time_left -= dt
-	# ates
 	if holding and ammo > 0:
 		fire_acc += dt * _fire_rate()
 		while fire_acc >= 1.0 and ammo > 0:
 			fire_acc -= 1.0
 			ammo -= 1
-			_add_p(cannon.position.x + randf_range(-0.15, 0.15), 0.8, randf_range(-0.5, 0.5), 0)
-			barrel.scale.z = 0.7
+			_add_p(barrel.position.x + randf_range(-0.2, 0.2), -1.0, randf_range(-0.6, 0.6), 0)
+			barrel.position.z = 0.35
+			flash_t = 1.0
 	else:
 		fire_acc = minf(fire_acc, 1.0)
-	# hareketli kapilar
+	var sg: Array = []
 	for g in gates:
 		if g["amp"] > 0.0:
 			var w: float = g["w"]
 			g["cx"] = clampf(g["bx"] + sin(t * 1.3 + g["ph"]) * g["amp"], -LANE + w * 0.5, LANE - w * 0.5)
 			(g["node"] as Node3D).position.x = g["cx"]
-	# oyuncu birimleri
+		if g["sec"] == sec:
+			sg.append(g)
 	var base_hits := 0
 	var n0 := px.size()
+	front = 0.0
 	for i in range(n0 - 1, -1, -1):
 		var z0: float = pz[i]
 		var z1: float = z0 - PSPEED * dt
 		var x: float = px[i] + pdx[i] * dt
 		if z1 < -29.0:
-			x = lerpf(x, clampf(x, -3.0, 3.0), dt * 3.0)
+			x = lerpf(x, clampf(x, -2.8, 2.8), dt * 3.0)
 		if x > LANE or x < -LANE:
 			pdx[i] = -pdx[i]
 			x = clampf(x, -LANE, LANE)
 		px[i] = x
 		pz[i] = z1
-		if z1 <= BASE_Z + 1.3:
+		front = minf(front, z1)
+		if z1 <= BASE_Z + 1.8:
 			base_hits += 1
 			_kill_p(i)
 			continue
 		var killed := false
-		for gi in gates.size():
-			var g: Dictionary = gates[gi]
+		for g in sg:
 			var gz: float = g["z"]
-			if z0 > gz and z1 <= gz and absf(x - g["cx"]) < g["w"] * 0.5 and (pmask[i] & (1 << gi)) == 0:
-				pmask[i] |= 1 << gi
+			var bit: int = 1 << int(g["gi"])
+			if z0 > gz and z1 <= gz and absf(x - g["cx"]) < g["w"] * 0.5 and (pmask[i] & bit) == 0:
+				pmask[i] |= bit
 				var m := pmask[i]
 				match g["op"]:
 					"x2":
-						_add_p(x + randf_range(-0.4, 0.4), z1 - 0.2, randf_range(-0.8, 0.8), m); g["pend"] += 1
+						_add_p(x + randf_range(-0.5, 0.5), z1 - 0.3, randf_range(-0.8, 0.8), m); g["pend"] += 1
 					"x3":
-						for k in 2: _add_p(x + randf_range(-0.5, 0.5), z1 - 0.2 - 0.2 * k, randf_range(-0.9, 0.9), m)
+						for k in 2: _add_p(x + randf_range(-0.6, 0.6), z1 - 0.3 - 0.3 * k, randf_range(-0.9, 0.9), m)
 						g["pend"] += 2
 					"+10":
 						if g["charge"] > 0:
 							g["charge"] -= 1
-							_add_p(x + randf_range(-0.5, 0.5), z1 - 0.3, randf_range(-0.9, 0.9), m); g["pend"] += 1
+							_add_p(x + randf_range(-0.6, 0.6), z1 - 0.4, randf_range(-0.9, 0.9), m); g["pend"] += 1
 					"-5":
 						if g["charge"] > 0:
 							g["charge"] -= 1
@@ -459,37 +678,51 @@ func _sim(dt: float) -> void:
 					break
 		if killed:
 			_kill_p(i)
-	# kapi pop'lari
 	pop_t -= dt
 	if pop_t <= 0.0:
 		pop_t = 0.15
-		for g in gates:
+		for g in sg:
 			var pnd: int = g["pend"]
 			if pnd != 0:
 				var nd: Node3D = g["node"]
-				pop_text(nd.position + Vector3(randf_range(-0.6, 0.6), 2.4, 0), ("+%d" % pnd) if pnd > 0 else str(pnd), g["col"], absi(pnd) > 8)
-				nd.scale = Vector3(1.15, 1.15, 1.15)
-				create_tween().tween_property(nd, "scale", Vector3.ONE, 0.12)
-				burst(nd.position + Vector3(0, 1, 0), g["col"], 12)
+				pop_text(nd.position + Vector3(randf_range(-0.6, 0.6), 3.8, 0), ("+%d" % pnd) if pnd > 0 else str(pnd), g["col"], absi(pnd) > 8)
+				nd.scale = Vector3(1.12, 1.12, 1.12)
+				create_tween().tween_property(nd, "scale", Vector3.ONE, 0.14)
+				var pm: StandardMaterial3D = g["pmat"]
+				pm.emission_energy_multiplier = 4.0
+				create_tween().tween_property(pm, "emission_energy_multiplier", 0.8, 0.25)
+				burst(nd.position + Vector3(0, 1.5, 0), g["col"], 14)
 				g["pend"] = 0
+	var B: Dictionary = bases[sec]
 	if base_hits > 0:
 		base_hp -= base_hits
-		trauma = minf(1.0, trauma + 0.04 * base_hits)
-		base_node.scale = Vector3(1.06, 0.95, 1.06)
-		create_tween().tween_property(base_node, "scale", Vector3.ONE, 0.08)
+		trauma = minf(1.0, trauma + 0.03 * base_hits)
+		var bn: Node3D = B["node"]
+		var bs: float = 1.25 if sec == bases.size() - 1 else 1.0
+		bn.scale = Vector3(1.05, 0.96, 1.05) * bs
+		create_tween().tween_property(bn, "scale", Vector3.ONE * bs, 0.08)
+		if randf() < 0.35:
+			chunk_burst(Vector3(randf_range(-3, 3), randf_range(2, 4), bn.position.z + 1.5), Color(0.8, 0.3, 0.15))
 		if randf() < 0.5:
-			burst(Vector3(randf_range(-3, 3), 2, BASE_Z + 1.2), ENEMY, 14)
-	# dusman dogur
+			burst(Vector3(randf_range(-3, 3), 2, bn.position.z + 1.6), ENEMY, 14)
+		var ratio := float(base_hp) / base_max
+		var want := 3 if ratio < 0.25 else (2 if ratio < 0.5 else (1 if ratio < 0.75 else 0))
+		while B["cracks"] < want:
+			B["cracks"] += 1
+			(B["body"] as StandardMaterial3D).albedo_color = (B["body"] as StandardMaterial3D).albedo_color.darkened(0.22)
+			for k in 3:
+				var cr := _box(Vector3(randf_range(0.1, 0.2), randf_range(1.0, 2.2), 0.08), Vector3(randf_range(-2.8, 2.8), randf_range(1.0, 3.0), 1.55), _mat(Color(0.05, 0.02, 0.02), 0.0), bn, false)
+				cr.rotation.z = randf_range(-0.8, 0.8)
+			chunk_burst(Vector3(0, 3, bn.position.z + 1.5), Color(0.6, 0.25, 0.15))
 	spawn_t -= dt
 	if spawn_t <= 0.0 and ex.size() < MAXE:
-		spawn_t = L["spawn"] * randf_range(0.7, 1.3)
+		spawn_t = S["spawn"] * randf_range(0.7, 1.3)
 		var cnt := 1 + randi() % 3
 		for k in cnt:
-			var brute: bool = randf() < L["brute"]
-			ex.append(randf_range(-2.5, 2.5)); ez.append(BASE_Z + 2.0 + k * 0.5)
-			ehp.append(8 if brute else 1); esc.append(1.9 if brute else 1.0)
-		burst(Vector3(0, 3, BASE_Z - 1.5), PURPLE, 16)
-	# carpisma izgarasi
+			var brute: bool = randf() < S["brute"]
+			ex.append(randf_range(-2.5, 2.5)); ez.append(BASE_Z + 2.6 + k * 0.6)
+			ehp.append(10 if brute else 1); esc.append(1.9 if brute else 1.0)
+		burst(Vector3(0, 2, (B["node"] as Node3D).position.z + 2.0), PURPLE, 16)
 	for k in buckets.size():
 		buckets[k] = PackedInt32Array()
 	var np := px.size()
@@ -499,17 +732,17 @@ func _sim(dt: float) -> void:
 		var c := clampi(int(-pz[i]), 0, 45)
 		buckets[c].append(i)
 	for j in range(ex.size() - 1, -1, -1):
-		var ezj: float = ez[j] + 2.6 * dt
-		var exj: float = ex[j] + clampf(cannon.position.x - ex[j], -1.0, 1.0) * 0.3 * dt
+		var ezj: float = ez[j] + (2.0 if esc[j] > 1.5 else 2.7) * dt
+		var exj: float = ex[j] + clampf(barrel.position.x - ex[j], -1.0, 1.0) * 0.3 * dt
 		ez[j] = ezj; ex[j] = exj
-		if ezj > 1.0:
+		if ezj > 0.5:
 			ammo = maxi(0, ammo - 3)
 			trauma = minf(1.0, trauma + 0.5)
-			burst(Vector3(exj, 1, 1), ENEMY, 24)
-			pop_text(Vector3(exj, 2, 1), "-3", Color(1, 0.3, 0.3))
+			burst(Vector3(exj, 1, sec_off + 0.5), ENEMY, 24)
+			pop_text(Vector3(exj, 2.5, sec_off + 0.5), "-3", Color(1, 0.3, 0.3))
 			_kill_e(j)
 			continue
-		var r: float = 0.42 * esc[j]
+		var r: float = 0.6 * esc[j]
 		var r2 := r * r
 		var c := clampi(int(-ezj), 0, 45)
 		var hp: int = ehp[j]
@@ -526,45 +759,79 @@ func _sim(dt: float) -> void:
 			if hp <= 0: break
 		ehp[j] = hp
 		if hp <= 0:
-			burst(Vector3(exj, 0.6, ezj), ENEMY if esc[j] < 1.5 else Color(1, 0.8, 0.2), 18)
-			if esc[j] > 1.5: trauma = minf(1.0, trauma + 0.3)
+			burst(Vector3(exj, 0.8, ezj + sec_off), ENEMY if esc[j] < 1.5 else Color(1, 0.8, 0.2), 18)
+			if esc[j] > 1.5:
+				trauma = minf(1.0, trauma + 0.3)
+				chunk_burst(Vector3(exj, 1, ezj + sec_off), ENEMY)
 			_kill_e(j)
 	for i in range(np - 1, -1, -1):
 		if dead[i] == 1:
 			_kill_p(i)
-	# HUD
 	lbl_time.text = "%d sn" % ceili(maxf(0.0, time_left))
 	lbl_ammo.text = "Mermi: %d" % ammo
 	lbl_units.text = "Ordu: %d" % px.size()
-	hp_bar.value = float(maxi(base_hp, 0)) / base_max * 100.0
-	# bitis
-	if bench: return
+	(sec_bars[sec] as ProgressBar).value = 100.0 - float(maxi(base_hp, 0)) / base_max * 100.0
 	if base_hp <= 0:
-		_win()
-	elif time_left <= 0.0:
+		_base_destroyed()
+		return
+	if bench: return
+	if time_left <= 0.0:
 		_lose("Süre doldu!")
 	elif ammo <= 0 and px.size() == 0:
 		end_grace += dt
 		if end_grace > 0.6:
 			_lose("Ordun tükendi!")
 
+func _base_destroyed() -> void:
+	var B: Dictionary = bases[sec]
+	var bn: Node3D = B["node"]
+	trauma = 1.0
+	for k in 8:
+		burst(bn.position + Vector3(randf_range(-3.5, 3.5), randf_range(1, 6), 1.0), [ENEMY, PURPLE, Color(1, 0.85, 0.3)][k % 3], 30)
+	for k in 5:
+		chunk_burst(bn.position + Vector3(randf_range(-3, 3), randf_range(1, 5), 1.0), Color(0.7, 0.25, 0.12))
+	var tw := create_tween()
+	tw.tween_property(bn, "scale", bn.scale * Vector3(1.15, 0.2, 1.15), 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.tween_callback(bn.hide)
+	coins += 15
+	if sec + 1 >= bases.size():
+		_win()
+		return
+	# sonraki kaleye ilerle: kalan birlikler mermiye doner
+	var bonus := px.size() / 2 + 15
+	ammo += bonus
+	pop_text(Vector3(barrel.position.x, 4, sec_off - 6), "+%d MERMİ" % bonus, CYAN, true)
+	for i in range(0, px.size(), 8):
+		burst(Vector3(px[i], 0.8, pz[i] + sec_off), CYAN, 8)
+	_clear_units()
+	advancing = true
+	holding = false
+	sec += 1
+	(sec_bars[sec - 1] as ProgressBar).value = 100.0
+	_update_titles()
+	_setup_section()
+	var tw2 := create_tween()
+	tw2.tween_interval(0.6)
+	tw2.tween_property(self, "sec_off", -sec * SEC_LEN, 2.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw2.tween_callback(func() -> void: advancing = false)
+
 func _render() -> void:
 	var n := px.size()
 	for i in n:
 		var o := i * 12
 		pbuf[o + 3] = px[i]
-		pbuf[o + 7] = 0.32 + absf(sin(t * 14.0 + i)) * 0.18
-		pbuf[o + 11] = pz[i]
+		pbuf[o + 7] = 0.0
+		pbuf[o + 11] = pz[i] + sec_off
 	pmm.buffer = pbuf
 	pmm.visible_instance_count = n
 	var m := ex.size()
 	for j in m:
 		var o := j * 12
 		var s: float = esc[j]
-		ebuf[o] = s; ebuf[o + 5] = s; ebuf[o + 10] = s
+		ebuf[o] = -s; ebuf[o + 5] = s; ebuf[o + 10] = -s
 		ebuf[o + 3] = ex[j]
-		ebuf[o + 7] = 0.4 * s + absf(sin(t * 10.0 + j)) * 0.12
-		ebuf[o + 11] = ez[j]
+		ebuf[o + 7] = 0.0
+		ebuf[o + 11] = ez[j] + sec_off
 	emm.buffer = ebuf
 	emm.visible_instance_count = m
 
@@ -572,11 +839,7 @@ func _render() -> void:
 func _win() -> void:
 	playing = false
 	holding = false
-	trauma = 1.0
-	for k in 6:
-		burst(Vector3(randf_range(-3, 3), randf_range(1, 4), BASE_Z), [ENEMY, PURPLE, CYAN][k % 3], 30)
-	base_node.visible = false
-	earned = 40 + 30 * (level + 1) + ammo + int(time_left)
+	earned = 40 + 30 * (level + 1) + mini(ammo, 150) + int(time_left)
 	coins += earned
 	doubled = false
 	if level + 1 < LEVELS.size():
@@ -630,8 +893,7 @@ func _on_next() -> void:
 
 func _show_menu() -> void:
 	playing = false
-	px.clear(); pz.clear(); pdx.clear(); pmask.clear()
-	ex.clear(); ez.clear(); ehp.clear(); esc.clear()
+	_clear_units()
 	result.visible = false
 	hud.visible = false
 	menu.visible = true
@@ -706,27 +968,45 @@ func _build_ui() -> void:
 	hud.add_child(top)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 60)
+	row.add_theme_constant_override("separation", 40)
 	top.add_child(row)
-	lbl_level = _label("BÖLÜM 1", 52, row, CYAN)
-	lbl_time = _label("60 sn", 52, row)
-	lbl_ammo = _label("Mermi: 0", 52, row)
+	lbl_level = _label("BÖLÜM 1", 42, row, CYAN)
+	lbl_time = _label("60 sn", 42, row)
+	lbl_ammo = _label("Mermi: 0", 42, row)
 	var hc := CenterContainer.new()
 	top.add_child(hc)
-	hp_bar = ProgressBar.new()
-	hp_bar.custom_minimum_size = Vector2(760, 46)
-	hp_bar.show_percentage = false
-	var fill := StyleBoxFlat.new(); fill.bg_color = ENEMY; fill.set_corner_radius_all(20)
-	var bgs := StyleBoxFlat.new(); bgs.bg_color = Color(0, 0, 0, 0.6); bgs.set_corner_radius_all(20)
-	bgs.border_color = Color.WHITE; bgs.set_border_width_all(4)
-	hp_bar.add_theme_stylebox_override("fill", fill)
-	hp_bar.add_theme_stylebox_override("background", bgs)
-	hc.add_child(hp_bar)
+	sec_box = HBoxContainer.new()
+	sec_box.add_theme_constant_override("separation", 14)
+	hc.add_child(sec_box)
 	lbl_units = _label("Ordu: 0", 44, top, CYAN)
-	var hint := _label("Sürükle: nişan al  •  Basılı tut: ateş", 36, hud, Color(1, 1, 1, 0.7))
-	hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	hint.offset_top = -90
-	hint.offset_bottom = -30
+	var hl := _label("A/D veya sürükle: nişan  •  Basılı tut: ateş", 34, hud, Color(1, 1, 1, 0.7))
+	hl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	hl.offset_top = -80
+	hl.offset_bottom = -30
+	hint = Control.new()
+	hint.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(hint)
+	var hlab := _label("SÜRÜKLE & BASILI TUT", 64, hint, Color(1, 1, 0.6))
+	hlab.position = Vector2(0, 1250)
+	hlab.size = Vector2(1080, 90)
+	hand = Panel.new()
+	var hs := StyleBoxFlat.new()
+	hs.bg_color = Color(1, 1, 1, 0.85)
+	hs.set_corner_radius_all(60)
+	hs.border_color = CYAN
+	hs.set_border_width_all(10)
+	hand.add_theme_stylebox_override("panel", hs)
+	hand.size = Vector2(120, 120)
+	hand.position = Vector2(480, 1380)
+	hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint.add_child(hand)
+	var fing := ColorRect.new()
+	fing.color = Color(1, 1, 1, 0.85)
+	fing.size = Vector2(36, 110)
+	fing.position = Vector2(42, -80)
+	hand.add_child(fing)
+	hint.visible = false
 	hud.visible = false
 
 	var mv := _panel(cl)
@@ -749,6 +1029,23 @@ func _build_ui() -> void:
 	_btn("Menü", Color(0.3, 0.3, 0.5), rv, _show_menu)
 	result.visible = false
 	_refresh_menu()
+
+func _build_sec_bars(n: int) -> void:
+	for c in sec_box.get_children():
+		c.queue_free()
+	sec_bars.clear()
+	var w := 760 / n - 14
+	for i in n:
+		var pb := ProgressBar.new()
+		pb.custom_minimum_size = Vector2(w, 40 if i < n - 1 else 52)
+		pb.show_percentage = false
+		var fill := StyleBoxFlat.new(); fill.bg_color = CYAN if i < n - 1 else Color(1, 0.75, 0.1); fill.set_corner_radius_all(18)
+		var bgs := StyleBoxFlat.new(); bgs.bg_color = Color(0, 0, 0, 0.55); bgs.set_corner_radius_all(18)
+		bgs.border_color = Color.WHITE; bgs.set_border_width_all(4)
+		pb.add_theme_stylebox_override("fill", fill)
+		pb.add_theme_stylebox_override("background", bgs)
+		sec_box.add_child(pb)
+		sec_bars.append(pb)
 
 func _refresh_menu() -> void:
 	lbl_coins.text = "Coin: %d" % coins
@@ -776,6 +1073,7 @@ func _save() -> void:
 	c.set_value("p", "coins", coins)
 	c.set_value("p", "unlocked", unlocked)
 	c.set_value("p", "rate_lv", rate_lv)
+	c.set_value("p", "hint", hint_seen)
 	c.save("user://save.cfg")
 
 func _load() -> void:
@@ -784,6 +1082,7 @@ func _load() -> void:
 		coins = c.get_value("p", "coins", 0)
 		unlocked = c.get_value("p", "unlocked", 1)
 		rate_lv = c.get_value("p", "rate_lv", 0)
+		hint_seen = c.get_value("p", "hint", false)
 
 func _bench_report() -> void:
 	var a: Array = ft.slice(int(ft.size() * 0.15))
@@ -795,5 +1094,10 @@ func _bench_report() -> void:
 		if d > 0.05: spikes += 1
 	a.sort()
 	var p99: float = a[int(a.size() * 0.99)]
+	var cs := 0.0
+	var cm := 0.0
+	for u in cpu_us:
+		cs += u; cm = maxf(cm, u)
+	print("SIM avg_ms=%.2f max_ms=%.2f" % [cs / cpu_us.size() / 1000.0, cm / 1000.0])
 	print("BENCH frames=%d avg_fps=%.1f p99_ms=%.2f max_ms=%.2f spikes50=%d max_units=%d enemies=%d" % [a.size(), a.size() / s, p99 * 1000, mx * 1000, spikes, max_units, ex.size()])
 	get_tree().quit()
