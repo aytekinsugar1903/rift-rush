@@ -23,13 +23,13 @@ var is_low := false
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 200, "time": 120.0, "sections": [
+	{"ammo": 194, "time": 120.0, "sections": [
 		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
-	{"ammo": 190, "time": 120.0, "sections": [
+	{"ammo": 200, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 390, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
-	{"ammo": 195, "time": 120.0, "sections": [
+		{"hp": 470, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
+	{"ammo": 186, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
@@ -143,7 +143,11 @@ var ammo_warn: Label = null
 var hud_crow: Control = null
 var ptr_down := false
 var g_down := false        # isaretci (fare/dokunma) su an basili mi
-var in_gate := false       # ekran degisti: eski basis birakilana kadar girdiyi yut
+var in_gate := false
+var res_ready := false     # sonuc butonlari tiklanabilir mi (kilit acildi mi)
+var fade_tw: Tween = null
+var load_card: Label = null
+var STEER_GAIN := 1.0       # ekran degisti: eski basis birakilana kadar girdiyi yut
 var lose_streak := {}      # bolum -> ust uste yenilgi (oturum ici)
 var help_on := false
 var help_tag: Label = null
@@ -280,7 +284,7 @@ func _ready() -> void:
 		buckets.append(PackedInt32Array())
 	var args := OS.get_cmdline_user_args()
 	test_run = args.size() > 0  # bench/autoplay/flowtest/*shot: asla skor gonderme
-	if args.size() == 0: _prewarm_ui()
+	if args.size() == 0 or (args[0] == "uitiming" and OS.get_environment("NOWARM") != "1"): _prewarm_ui()
 	if args.size() > 0 and args[0] == "bench":
 		bench = true
 		hint_seen = OS.get_environment("BENCH_HINT") != "1"
@@ -449,6 +453,119 @@ func _ready() -> void:
 		print("WINSHOT next_mid=%s next_end=%s double_mid=%s double_end=%s locked_mid=%s locked_end=%s" % [r0, btn_next.get_global_rect(), d0, btn_double.get_global_rect(), lk, btn_next.mouse_filter == Control.MOUSE_FILTER_IGNORE])
 		get_viewport().get_texture().get_image().save_png(args[2])
 		get_tree().quit()
+	elif args.size() > 1 and args[0] == "holdcheck":
+		# bossu atis basili tutarken oldur, sonuc ekraninda her butonun ustunde birak (fare ve Space)
+		var how: String = args[1]
+		hint_seen = true
+		var fired := {}
+		for b: Button in res_btns:
+			fired[b.text] = 0
+			b.pressed.connect(func() -> void: fired[b.text] = int(fired.get(b.text, 0)) + 1)
+		var outs := []
+		for tgt in ["next", "double", "revive", "menu"]:
+			for k in fired: fired[k] = 0
+			start_level(1)
+			await get_tree().create_timer(0.5).timeout
+			var vp := get_viewport().get_final_transform()
+			var mid: Vector2 = vp * Vector2(540, 1300)
+			if how == "mouse":
+				var mb := InputEventMouseButton.new(); mb.button_index = MOUSE_BUTTON_LEFT; mb.pressed = true
+				mb.button_mask = MOUSE_BUTTON_MASK_LEFT; mb.position = mid; mb.global_position = mid
+				Input.parse_input_event(mb)
+			else:
+				var kp := InputEventKey.new(); kp.keycode = KEY_SPACE; kp.physical_keycode = KEY_SPACE; kp.pressed = true
+				Input.parse_input_event(kp)
+			await get_tree().create_timer(0.4).timeout
+			var was_holding := holding
+			if tgt == "revive":
+				time_left = 0.01   # sure bitsin -> yenilgi (revive butonu gorunur)
+			else:
+				while playing and sec < bases.size():
+					base_hp = 0
+					await get_tree().process_frame
+			while not result.visible:
+				await get_tree().process_frame
+			await get_tree().create_timer(1.6, true, false, true).timeout  # kilit acildi
+			var tb: Button = {"next": btn_next, "double": btn_double, "revive": btn_revive, "menu": _find_btn(result, "Menü")}[tgt]
+			var vis := tb.is_visible_in_tree()
+			var c: Vector2 = vp * tb.get_global_rect().get_center()
+			if how == "mouse":
+				var mm := InputEventMouseMotion.new(); mm.position = c; mm.global_position = c; mm.relative = c - mid
+				mm.button_mask = MOUSE_BUTTON_MASK_LEFT
+				Input.parse_input_event(mm)
+				await get_tree().create_timer(0.2).timeout
+				var mr := InputEventMouseButton.new(); mr.button_index = MOUSE_BUTTON_LEFT; mr.pressed = false
+				mr.position = c; mr.global_position = c
+				Input.parse_input_event(mr)
+			else:
+				for k in 6:   # tutulan tusun tekrar (echo) olaylari
+					var ke := InputEventKey.new(); ke.keycode = KEY_SPACE; ke.physical_keycode = KEY_SPACE; ke.pressed = true; ke.echo = true
+					Input.parse_input_event(ke)
+					await get_tree().create_timer(0.05).timeout
+				var kr := InputEventKey.new(); kr.keycode = KEY_SPACE; kr.physical_keycode = KEY_SPACE; kr.pressed = false
+				Input.parse_input_event(kr)
+			await get_tree().create_timer(0.6).timeout
+			var total := 0
+			for k in fired: total += int(fired[k])
+			var stale_ok := total == 0 and result.visible
+			# taze basis ayni butonda calismali (reklam butonlari haric, reklam acmasin diye sadece next/menu)
+			var fresh_ok := true
+			if tgt == "next" or tgt == "menu":
+				_tap(tb, true); await get_tree().process_frame; _tap(tb, false)
+				await get_tree().create_timer(0.5).timeout
+				fresh_ok = not result.visible
+			outs.append("%s(vis=%s,held=%s): stale_ignored=%s fresh_works=%s" % [tgt, vis, was_holding, stale_ok, fresh_ok])
+			_enter_menu()
+			menu_mode = false
+			await get_tree().create_timer(0.4).timeout
+		print("HOLDCHECK %s %s" % [how, " | ".join(outs)])
+		get_tree().quit()
+	elif args.size() > 0 and args[0] == "steercheck":
+		# parmak X px kayinca top ekranda kac px kayiyor (1.0 = tam alti)
+		hint_seen = true
+		start_level(0)
+		await get_tree().create_timer(0.6).timeout
+		var vp := get_viewport().get_final_transform()
+		var p0: Vector2 = vp * Vector2(540, 1500)
+		var mb := InputEventMouseButton.new(); mb.button_index = MOUSE_BUTTON_LEFT; mb.pressed = true
+		mb.button_mask = MOUSE_BUTTON_MASK_LEFT; mb.position = p0; mb.global_position = p0
+		Input.parse_input_event(mb)
+		await get_tree().process_frame
+		var bx0: float = (vp * cam.unproject_position(barrel.global_position)).x
+		var lag := []
+		for k in 10:
+			var mm := InputEventMouseMotion.new(); mm.relative = Vector2(8, 0); mm.button_mask = MOUSE_BUTTON_MASK_LEFT
+			p0 += Vector2(8, 0); mm.position = p0; mm.global_position = p0
+			Input.parse_input_event(mm)
+			await get_tree().process_frame
+			lag.append(snappedf(((vp * cam.unproject_position(barrel.global_position)).x - bx0) / (8.0 * (k + 1)), 0.01))
+		for k in 10: await get_tree().process_frame
+		var bx1: float = (vp * cam.unproject_position(barrel.global_position)).x
+		print("STEERCHECK ratio_final=%.2f per_frame=%s window=%s" % [(bx1 - bx0) / 80.0, lag, get_window().size])
+		get_tree().quit()
+	elif args.size() > 0 and args[0] == "uitiming":
+		# her ekran gecisinin geri cagrisi ne kadar suruyor + menu arka plan kare suresi
+		_enter_menu()
+		await get_tree().create_timer(2.0).timeout
+		var f0 := Engine.get_process_frames(); var t0 := Time.get_ticks_msec()
+		await get_tree().create_timer(2.0).timeout
+		var menu_ms := float(Time.get_ticks_msec() - t0) / maxi(1, Engine.get_process_frames() - f0)
+		var res := ["menu_frame_ms=%.1f" % menu_ms]
+		var steps := {"map": func() -> void: menu.visible = false; mapp.visible = true; _refresh_menu(),
+			"loadout": func() -> void: _show_loadout(2),
+			"start_L3": func() -> void: start_level(2),
+			"to_menu": func() -> void: _enter_menu()}
+		for k in ["map", "loadout", "start_L3", "to_menu"]:
+			var ts := Time.get_ticks_usec()
+			(steps[k] as Callable).call()
+			var cb_ms := (Time.get_ticks_usec() - ts) / 1000.0
+			var tf := Time.get_ticks_usec()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			res.append("%s cb=%.0fms next2frames=%.0fms" % [k, cb_ms, (Time.get_ticks_usec() - tf) / 1000.0])
+			await get_tree().create_timer(1.0).timeout
+		print("UITIMING " + " | ".join(res))
+		get_tree().quit()
 	elif args.size() > 0 and args[0] == "inputcheck":
 		# gecisi tetikleyen basis yeni ekrana tasinmamali; zafer butonu taze basis ister
 		hint_seen = true
@@ -459,9 +576,9 @@ func _ready() -> void:
 		var bm: Button = _find_btn(result, "Menü")
 		_tap(bm, true)                      # Menü'ye bas, basili tut
 		await get_tree().create_timer(0.9).timeout
-		var on_menu := menu.visible and not settingsp.visible and not mapp.visible
-		_tap(bm, false)                     # eski basis menude birakilir -> yutulmali
-		await get_tree().create_timer(0.3).timeout
+		var on_menu := result.visible       # v8.5: sonuc butonu birakinca tetiklenir; basili iken hicbir sey olmaz
+		_tap(bm, false)                     # ayni butonda birak -> menuye gider
+		await get_tree().create_timer(0.9).timeout
 		var still_menu := menu.visible and not settingsp.visible and not mapp.visible
 		var pb: Button = _find_btn(menu, "OYNA")
 		_tap(pb, true); await get_tree().process_frame; _tap(pb, false)
@@ -482,14 +599,18 @@ func _ready() -> void:
 		_tap(btn_next, true); await get_tree().process_frame; _tap(btn_next, false)
 		await get_tree().create_timer(0.8).timeout
 		var fresh_ok := not result.visible
-		print("INPUTCHECK menu_after_hold=%s release_swallowed=%s first_oyna_opens_map=%s win_stale_press_ignored=%s win_fresh_press_works=%s lv=%d" % [on_menu, still_menu, map_ok, stale_ignored, fresh_ok, lv0])
+		print("INPUTCHECK held_no_action=%s release_on_menu_goes_menu=%s first_oyna_opens_map=%s win_stale_press_ignored=%s win_fresh_press_works=%s lv=%d" % [on_menu, still_menu, map_ok, stale_ignored, fresh_ok, lv0])
 		get_tree().quit()
 	elif args.size() > 1 and args[0] == "helpcheck":
 		hint_seen = true
+		lose_streak[1] = 1
+		start_level(1)
+		await get_tree().create_timer(0.5).timeout
+		print("HELPCHECK 1loss help=%s start_ammo=%d tag=%s '%s'" % [help_on, start_ammo, help_tag.visible, help_tag.text])
 		lose_streak[1] = 2
 		start_level(1)
 		await get_tree().create_timer(1.0).timeout
-		print("HELPCHECK help=%s start_ammo=%d ammo=%d tag=%s" % [help_on, start_ammo, ammo, help_tag.visible])
+		print("HELPCHECK 2loss help=%s start_ammo=%d ammo=%d tag=%s '%s'" % [help_on, start_ammo, ammo, help_tag.visible, help_tag.text])
 		ammo = int(start_ammo * 0.2)
 		await get_tree().create_timer(0.6).timeout
 		get_viewport().get_texture().get_image().save_png(args[1])
@@ -1362,9 +1483,16 @@ func _start(L: Dictionary, i: int) -> void:
 	settingsp.visible = false
 	Engine.time_scale = 1.0
 	start_ammo = maxi(1, int(L["ammo"]))
-	# dinamik yardim: ayni bolumde ust uste 2 yenilgiden sonra +%25 mermi (zaferde sifirlanir)
-	help_on = not menu_mode and not daily and int(lose_streak.get(i, 0)) >= 2
-	if help_on: start_ammo = int(round(start_ammo * 1.25))
+	# dinamik yardim: ayni bolumde yenilgiden sonra ek mermi (zaferde sifirlanir)
+	# v8.5: 1 yenilgiden sonra +%15, 2+ yenilgiden sonra +%30 mermi
+	var ls := int(lose_streak.get(i, 0))
+	help_on = not menu_mode and not daily and ls >= 1
+	var help_pct := 30 if ls >= 2 else 15
+	if help_on:
+		start_ammo = int(round(start_ammo * (1.0 + help_pct / 100.0)))
+		if help_tag: help_tag.text = "Yardım: +%%%d mermi" % help_pct
+	if test_run and OS.get_environment("AP_HELP") != "":
+		start_ammo = int(round(start_ammo * float(OS.get_environment("AP_HELP"))))  # deneme: yardimli mermi
 	if help_tag: help_tag.visible = help_on
 	is_replay = not menu_mode and not daily and int(stars_best.get(i, 0)) > 0
 	if menu_mode: biome = 0
@@ -1490,6 +1618,27 @@ func _prewarm_ui() -> void:
 	for p: Control in [mapp, settingsp]:
 		p.visible = false
 		p.modulate.a = 1.0
+	# bolum/biyom modellerini (kaktus, kar agaci...) ve shaderlarini acilista isit:
+	# ilk L3 girisinde ~1 sn takilma olmasin. Kare basina bir model, kamera onunde minicik.
+	var paths := {"res://assets/nature/cliff_large_rock.glb": true}
+	for P: Dictionary in BIOMES:
+		for key in ["trees", "bush", "deco", "rocks"]:
+			for pth in P[key]: paths[pth] = true
+	var warm := Node3D.new()
+	add_child(warm)
+	for pth: String in paths:
+		if mesh_cache.has(pth): continue
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = _asset_mesh(pth)
+		mm.instance_count = 1
+		mm.set_instance_transform(0, Transform3D(Basis().scaled(Vector3.ONE * 0.02), cam.global_position - cam.global_transform.basis.z * 2.0))
+		var mi := MultiMeshInstance3D.new()
+		mi.multimesh = mm
+		warm.add_child(mi)
+		await get_tree().process_frame
+	for k in 2: await get_tree().process_frame
+	warm.queue_free()
 
 func _tap(c: Control, down: bool) -> void:
 	var mb := InputEventMouseButton.new()
@@ -1519,12 +1668,17 @@ func _input(e: InputEvent) -> void:
 	if in_gate and (is_btn or e is InputEventScreenDrag or e is InputEventMouseMotion):
 		get_viewport().set_input_as_handled()
 		return
+	if result and result.visible and not res_ready and (is_btn or e is InputEventKey):
+		# sonuc ekrani etkilesime acilmadan gelen hicbir basis/birakma butonlara ulasmaz
+		get_viewport().set_input_as_handled()
+		return
 	if not playing: return
 	if e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
 		holding = e.pressed
 		ptr_down = e.pressed
 	elif e is InputEventScreenDrag or (e is InputEventMouseMotion and (ptr_down or holding or (e.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0)):
-		cannon_x = clampf(cannon_x + e.relative.x * _world_per_px(), -LANE + 0.4, LANE - 0.4)
+		cannon_x = clampf(cannon_x + e.relative.x * _world_per_px() * STEER_GAIN, -LANE + 0.4, LANE - 0.4)
+		if barrel: barrel.position.x = lerpf(barrel.position.x, cannon_x, 0.85)  # ayni karede takip
 		drag_sum += absf(e.relative.x)
 	elif e is InputEventKey and e.keycode == KEY_SPACE:
 		holding = e.pressed
@@ -1599,7 +1753,7 @@ func _process(dt: float) -> void:
 			hint_seen = true
 			_save()
 	cannon.position = Vector3(0, 0, sec_off + 1.8)
-	barrel.position.x = lerpf(barrel.position.x, cannon_x, minf(1.0, dt * 35.0))
+	barrel.position.x = lerpf(barrel.position.x, cannon_x, minf(1.0, dt * 60.0))  # parmagi siki takip et (hafif yumusatma)
 	barrel.position.z = lerpf(barrel.position.z, 0.0, minf(1.0, dt * 14.0))
 	flash_t = maxf(0.0, flash_t - dt * 10.0)
 	flash.scale = Vector3.ONE * flash_t * 1.1
@@ -2278,6 +2432,7 @@ func _lose(why: String) -> void:
 
 func _show_result(lock := 0.5) -> void:
 	_mark_screen()
+	res_ready = false
 	hud.visible = false
 	result.visible = true
 	result.modulate.a = 0.0
@@ -2293,12 +2448,13 @@ func _show_result(lock := 0.5) -> void:
 	tw.tween_callback(func() -> void:
 		if my_id != res_lock_id: return
 		_mark_screen()  # kilit acilmadan once baslamis basis butona sayilmaz
+		res_ready = true
 		for b: Button in res_btns:
 			b.mouse_filter = Control.MOUSE_FILTER_STOP
 			create_tween().tween_property(b, "modulate:a", 1.0, 0.12))
 
 func _on_double() -> void:
-	if doubled: return
+	if doubled or not res_ready: return
 	Ads.show_rewarded(func(ok: bool) -> void:
 		if ok:
 			coins += earned
@@ -2317,6 +2473,7 @@ func _maybe_interstitial(then: Callable) -> void:
 		then.call()
 
 func _on_revive() -> void:
+	if not res_ready: return
 	Ads.show_rewarded(func(ok: bool) -> void:
 		if ok:
 			revived = true
@@ -2343,7 +2500,7 @@ func _on_next() -> void:
 		_start(cur_L, level)
 
 func _show_menu() -> void:
-	_fade(_enter_menu)
+	_fade(_enter_menu, "Yükleniyor…")
 
 # ---------------- UI ----------------
 func _style(c: Color) -> StyleBoxFlat:
@@ -2369,6 +2526,12 @@ func _btn(txt: String, c: Color, parent: Node, cb: Callable) -> Button:
 	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
 	b.add_theme_constant_override("outline_size", 10)
 	b.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	# aninda basma geri bildirimi: kucul + koyulas (pressed stili)
+	b.resized.connect(func() -> void: b.pivot_offset = b.size * 0.5)
+	b.button_down.connect(func() -> void:
+		b.pivot_offset = b.size * 0.5
+		b.create_tween().set_ignore_time_scale(true).tween_property(b, "scale", Vector2.ONE * 0.94, 0.05))
+	b.button_up.connect(func() -> void: b.create_tween().set_ignore_time_scale(true).tween_property(b, "scale", Vector2.ONE, 0.08))
 	b.pressed.connect(func() -> void: sfx("click", -6.0, 0.03, 0.05))
 	b.pressed.connect(cb)
 	parent.add_child(b)
@@ -2556,6 +2719,10 @@ func _build_ui() -> void:
 	btn_revive = _btn("Devam et +50 mermi (Reklam)", Color(0.85, 0.3, 0.6), rv, _on_revive)
 	var bmenu := _btn("Menü", Color(0.3, 0.3, 0.5), rv, _show_menu)
 	res_btns = [btn_next, btn_double, btn_revive, bmenu]
+	for b: Button in res_btns:
+		# yalniz bu ekranda baslayan ve ayni butonda biten basis sayilir; klavye/odak ile tetiklenmez
+		b.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+		b.focus_mode = Control.FOCUS_NONE
 	result.visible = false
 	var fl := CanvasLayer.new()
 	fl.layer = 10
@@ -2565,6 +2732,13 @@ func _build_ui() -> void:
 	fader.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fader.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fl.add_child(fader)
+	load_card = _label("", 72, fader, Color(1, 1, 1))
+	load_card.add_theme_font_override("font", bold)
+	load_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	load_card.size = Vector2(1000, 120)
+	load_card.position = Vector2(-500, -60)
+	load_card.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	load_card.visible = false
 	_refresh_menu()
 
 func _chip(parent: Node, col: Color, kind: String) -> Label:
@@ -2645,7 +2819,7 @@ func _build_loadout(cl: Node) -> void:
 	card_rows = VBoxContainer.new()
 	card_rows.add_theme_constant_override("separation", 14)
 	v.add_child(card_rows)
-	_btn("SAVAŞA BAŞLA", Color(0.1, 0.7, 0.45), v, func() -> void: _fade(func() -> void: start_level(lo_level)))
+	_btn("SAVAŞA BAŞLA", Color(0.1, 0.7, 0.45), v, func() -> void: _fade(func() -> void: start_level(lo_level), "Bölüm %d" % (lo_level + 1)))
 	_btn("Geri", Color(0.3, 0.3, 0.5), v, _show_map).custom_minimum_size = Vector2(720, 90)
 	loadout.visible = false
 
@@ -2756,7 +2930,7 @@ func _build_daily(cl: Node) -> void:
 	daily_list.add_theme_font_size_override("font_size", 36)
 	daily_list.add_theme_font_override("font", bold)
 	pc.add_child(daily_list)
-	_btn("OYNA", Color(0.1, 0.7, 0.45), v, func() -> void: _fade(start_daily))
+	_btn("OYNA", Color(0.1, 0.7, 0.45), v, func() -> void: _fade(start_daily, "Günlük Meydan Okuma"))
 	_btn("Geri", Color(0.3, 0.3, 0.5), v, _show_menu).custom_minimum_size = Vector2(720, 90)
 	dailyp.visible = false
 	lb_http = HTTPRequest.new()
@@ -3214,21 +3388,37 @@ func _coin_burst(wp: Vector3, n: int) -> void:
 			sfx("coin", -12.0, 0.03, 0.2)
 			hud_coin.text = str(coins))
 
-func _fade(cb: Callable) -> void:
+func _fade(cb: Callable, card := "") -> void:
+	# gecis hemen baslar: hafif ekranlarda (harita, ordu, ayarlar) ayni karede degisir;
+	# agir gecislerde (bolum/menu kurulumu) siyah yerine kisa bir yukleniyor karti gosterilir
 	if fader == null or bench:
 		cb.call()
 		return
-	fader.mouse_filter = Control.MOUSE_FILTER_STOP
-	var tw := create_tween().set_ignore_time_scale(true)
-	tw.tween_property(fader, "color:a", 1.0, 0.16)
-	tw.tween_callback(func() -> void:
+	if fade_tw: fade_tw.kill()
+	if card == "":
 		cb.call()
 		_mark_screen()
-		await get_tree().process_frame
-		await get_tree().process_frame
 		fader.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var tw2 := create_tween().set_ignore_time_scale(true)
-		tw2.tween_property(fader, "color:a", 0.0, 0.25))
+		fader.color.a = 0.3
+		if load_card: load_card.visible = false
+		fade_tw = create_tween().set_ignore_time_scale(true)
+		fade_tw.tween_property(fader, "color:a", 0.0, 0.14)
+		return
+	fader.mouse_filter = Control.MOUSE_FILTER_STOP
+	fader.color.a = 0.88
+	if load_card:
+		load_card.text = card
+		load_card.visible = true
+	await get_tree().process_frame
+	await get_tree().process_frame   # kart ekrana ciksin, sonra kur
+	cb.call()
+	_mark_screen()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	fader.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if load_card: load_card.visible = false
+	fade_tw = create_tween().set_ignore_time_scale(true)
+	fade_tw.tween_property(fader, "color:a", 0.0, 0.2)
 
 func _music(which: int) -> void:
 	cur_music = which
