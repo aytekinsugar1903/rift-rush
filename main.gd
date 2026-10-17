@@ -28,10 +28,10 @@ const LEVELS := [
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
 	{"ammo": 200, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 470, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
+		{"hp": 340, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
 	{"ammo": 186, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
-		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
+		{"hp": 450, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
 		{"hp": 260, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "okcu", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
 		{"hp": 450, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.6], [-27.0, -2.2, 4.0, "dev", 0.0], [-27.0, 2.2, 4.0, "x2", 0.0]]},
@@ -97,6 +97,7 @@ var ex := PackedFloat32Array()
 var ez := PackedFloat32Array()
 var ehp := PackedInt32Array()
 var esc := PackedFloat32Array()
+var ewv := PackedByteArray()   # 1 = boss dalgasi dusmani (oldurunce +1 mermi iade)
 var pbuf := PackedFloat32Array()
 var ebuf := PackedFloat32Array()
 var pmm: MultiMesh
@@ -133,6 +134,7 @@ var drag_sum := 0.0
 var hint_fire_t := 0.0
 var hint_t := 0.0
 var test_run := false
+var clock_us := 0
 var posts_sent := 0
 var res_btns: Array = []
 var res_lock_id := 0
@@ -150,6 +152,8 @@ var load_card: Label = null
 var STEER_GAIN := 1.0       # ekran degisti: eski basis birakilana kadar girdiyi yut
 var lose_streak := {}      # bolum -> ust uste yenilgi (oturum ici)
 var help_on := false
+var help_cut := 0.0          # yardimda boss cani + dalga boyu indirimi
+var clock_scale := 1.0       # sure gercek zamanla akar (autoplay hizlandirmasinda AP_TS)
 var help_tag: Label = null
 var ammo_chip: Control = null
 var board_ref: Control = null
@@ -600,6 +604,16 @@ func _ready() -> void:
 		await get_tree().create_timer(0.8).timeout
 		var fresh_ok := not result.visible
 		print("INPUTCHECK held_no_action=%s release_on_menu_goes_menu=%s first_oyna_opens_map=%s win_stale_press_ignored=%s win_fresh_press_works=%s lv=%d" % [on_menu, still_menu, map_ok, stale_ignored, fresh_ok, lv0])
+		get_tree().quit()
+	elif args.size() > 1 and args[0] == "fadeshot":
+		# menuye donus karartmasi: yukleniyor karti ortada mi
+		hint_seen = true
+		start_level(0)
+		await get_tree().create_timer(0.8).timeout
+		_show_menu()
+		await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png(args[1])
+		print("FADESHOT card_rect=%s view=%s" % [load_card.get_global_rect(), get_viewport().get_visible_rect().size])
 		get_tree().quit()
 	elif args.size() > 1 and args[0] == "helpcheck":
 		hint_seen = true
@@ -1445,7 +1459,7 @@ func _make_base(z_world: float, boss: bool) -> Dictionary:
 # ---------------- seviye ----------------
 func _clear_units() -> void:
 	px.clear(); pz.clear(); pdx.clear(); pmask.clear(); pa.clear(); fly.clear(); ptype.clear(); php.clear(); pcd.clear(); blasts.clear(); giants_n = 0
-	ex.clear(); ez.clear(); ehp.clear(); esc.clear()
+	ex.clear(); ez.clear(); ehp.clear(); esc.clear(); ewv.clear()
 
 func start_level(i: int) -> void:
 	menu_mode = false
@@ -1488,9 +1502,13 @@ func _start(L: Dictionary, i: int) -> void:
 	var ls := int(lose_streak.get(i, 0))
 	help_on = not menu_mode and not daily and ls >= 1
 	var help_pct := 30 if ls >= 2 else 15
+	# v8.6: yardim boss canini ve dalga boyunu da azaltir (1 yenilgi -%20, 2+ yenilgi -%40)
+	help_cut = (0.4 if ls >= 2 else 0.2) if help_on else 0.0
 	if help_on:
 		start_ammo = int(round(start_ammo * (1.0 + help_pct / 100.0)))
-		if help_tag: help_tag.text = "Yardım: +%%%d mermi" % help_pct
+		if help_tag:
+			help_tag.text = "Yardım: +%%%d mermi\nBoss canı -%%%d" % [help_pct, int(help_cut * 100)]
+			help_tag.size = Vector2(0, 0)
 	if test_run and OS.get_environment("AP_HELP") != "":
 		start_ammo = int(round(start_ammo * float(OS.get_environment("AP_HELP"))))  # deneme: yardimli mermi
 	if help_tag: help_tag.visible = help_on
@@ -1558,6 +1576,8 @@ func _setup_section() -> void:
 				break
 	base_max = S["hp"]
 	base_max = int(base_max * (1.0 if daily else HP_MULT[mini(level, 5)]))
+	if sec == cur_L["sections"].size() - 1 and help_cut > 0.0:
+		base_max = int(base_max * (1.0 - help_cut))
 	base_hp = base_max
 	spawn_t = 2.0
 	wave_t = 7.0
@@ -1604,8 +1624,8 @@ func _kill_p(i: int) -> void:
 
 func _kill_e(j: int) -> void:
 	var l := ex.size() - 1
-	ex[j] = ex[l]; ez[j] = ez[l]; ehp[j] = ehp[l]; esc[j] = esc[l]
-	ex.resize(l); ez.resize(l); ehp.resize(l); esc.resize(l)
+	ex[j] = ex[l]; ez[j] = ez[l]; ehp[j] = ehp[l]; esc[j] = esc[l]; ewv[j] = ewv[l]
+	ex.resize(l); ez.resize(l); ehp.resize(l); esc.resize(l); ewv.resize(l)
 
 # ---------------- girdi ----------------
 func _prewarm_ui() -> void:
@@ -1793,6 +1813,14 @@ func _process(dt: float) -> void:
 	last_us = now
 	if bench: rdt = dt
 	var rem := rdt * Engine.time_scale
+	# sure gercek zamanla akar (yavas cekim, kale gecisi, dusuk FPS onu yavaslatmaz)
+	if playing and not menu_mode and not bench:
+		var now_c := Time.get_ticks_usec()
+		var cdt := 0.0 if clock_us == 0 else clampf((now_c - clock_us) / 1000000.0, 0.0, 1.0)
+		clock_us = now_c
+		time_left -= cdt * clock_scale
+	else:
+		clock_us = 0
 	while playing and not advancing and rem > 0.00001:
 		var stp := minf(rem, 0.05)
 		_sim(stp)
@@ -1802,7 +1830,7 @@ func _process(dt: float) -> void:
 
 func _sim(dt: float) -> void:
 	var S: Dictionary = cur_L["sections"][sec]
-	time_left -= dt
+	if bench or menu_mode: time_left -= dt
 	if holding and ammo > 0:
 		hint_fire_t += dt
 		fire_acc += dt * _fire_rate()
@@ -1992,7 +2020,7 @@ func _sim(dt: float) -> void:
 		for k in cnt:
 			var brute: bool = randf() < S["brute"]
 			ex.append(randf_range(-2.5, 2.5)); ez.append(BASE_Z + 2.6 + k * 0.6)
-			ehp.append(10 if brute else 1); esc.append(1.9 if brute else 1.0)
+			ehp.append(10 if brute else 1); esc.append(1.9 if brute else 1.0); ewv.append(0)
 		burst(Vector3(0, 2, (B["node"] as Node3D).position.z + 2.0), PURPLE, 16)
 	if not menu_mode and not daily and level > 0:
 		wave_t -= dt
@@ -2000,11 +2028,14 @@ func _sim(dt: float) -> void:
 			wave_t = maxf(9.0, 16.0 - level * 1.4) * randf_range(0.85, 1.15)
 			var cxw := randf_range(-2.0, 2.0)
 			var cols := mini(3 + level / 2, 5)
+			# yardim: dalga boyu -%20 / -%40 (arka siralar eksik gelir)
+			var wn := int(round(3 * cols * (1.0 - help_cut)))
+			var is_boss := sec == bases.size() - 1
 			for r in 3:
 				for q in cols:
-					if ex.size() >= MAXE: break
+					if ex.size() >= MAXE or r * cols + q >= wn: break
 					ex.append(clampf(cxw + (q - (cols - 1) * 0.5) * 0.7, -3.8, 3.8)); ez.append(BASE_Z + 3.0 + r * 0.7)
-					ehp.append(1); esc.append(1.0)
+					ehp.append(1); esc.append(1.0); ewv.append(1 if is_boss else 0)
 			_banner("DALGA!", ENEMY)
 			sfx("arrow", -6.0, 0.1)
 	ammo_pop_t -= dt
@@ -2061,7 +2092,7 @@ func _sim(dt: float) -> void:
 			if hp <= 0: break
 		ehp[j] = hp
 		if hp <= 0:
-			_reward(exj, ezj, esc[j] > 1.5)
+			_reward(exj, ezj, esc[j] > 1.5, ewv[j] == 1)
 			burst(Vector3(exj, 0.8, ezj + sec_off), ENEMY if esc[j] < 1.5 else Color(1, 0.8, 0.2), 18)
 			if esc[j] < 1.5: _fly(exj, ezj, 1)
 			if esc[j] > 1.5:
@@ -2080,13 +2111,13 @@ func _sim(dt: float) -> void:
 			if Vector2(ex[j], ez[j]).distance_squared_to(bl) < rr * rr:
 				ehp[j] -= 3
 				if ehp[j] <= 0:
-					_reward(ex[j], ez[j], esc[j] > 1.5)
+					_reward(ex[j], ez[j], esc[j] > 1.5, ewv[j] == 1)
 					if esc[j] < 1.5: _fly(ex[j], ez[j], 1)
 					_kill_e(j)
 	blasts.clear()
 	for j in range(ex.size() - 1, -1, -1):
 		if ehp[j] <= 0:
-			_reward(ex[j], ez[j], esc[j] > 1.5)
+			_reward(ex[j], ez[j], esc[j] > 1.5, ewv[j] == 1)
 			burst(Vector3(ex[j], 0.8, ez[j] + sec_off), ENEMY, 12)
 			if esc[j] < 1.5: _fly(ex[j], ez[j], 1)
 			_kill_e(j)
@@ -2120,9 +2151,9 @@ func _sim(dt: float) -> void:
 		if end_grace > 0.6:
 			_lose("Mermin ve ordun bitti!\nİpucu: Düşman öldürmek mermi verir.\nTopa ulaşan düşman 3 mermi götürür.")
 
-func _reward(x: float, z: float, brute: bool) -> void:
+func _reward(x: float, z: float, brute: bool, wave := false) -> void:
 	if menu_mode: return
-	kill_acc += 6 if brute else 1
+	kill_acc += 6 if brute else (3 if wave else 1)  # boss dalgasi: her oldurme +1 mermi iade
 	if kill_acc >= 3:
 		var add := kill_acc / 3
 		kill_acc -= add * 3
@@ -2523,6 +2554,7 @@ func _btn(txt: String, c: Color, parent: Node, cb: Callable) -> Button:
 	b.add_theme_stylebox_override("pressed", _style(c.darkened(0.2)))
 	b.add_theme_stylebox_override("disabled", _style(Color(0.3, 0.3, 0.38)))
 	b.add_theme_color_override("font_color", Color.WHITE)
+	b.add_theme_color_override("font_disabled_color", Color(0.9, 0.91, 0.96))  # kilitli butonda da okunur yazi
 	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
 	b.add_theme_constant_override("outline_size", 10)
 	b.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
@@ -2620,29 +2652,44 @@ func _build_ui() -> void:
 	ammo_pop.size = Vector2(260, 56)
 	ammo_pop.position = Vector2(810, 170)
 	ammo_pop.modulate.a = 0.0
-	help_tag = _label("Yardım: +%25 mermi", 34, hud, Color(0.55, 1.0, 0.6))
+	help_tag = _label("Yardım: +%25 mermi", 44, hud, Color(0.6, 1.0, 0.65))
 	help_tag.add_theme_font_override("font", bold)
 	help_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	help_tag.position = Vector2(36, 395)
-	help_tag.size = Vector2(400, 50)
+	var hts := StyleBoxFlat.new()   # koyu zemin: cimen ustunde de okunur
+	hts.bg_color = Color(0.02, 0.05, 0.12, 0.88)
+	hts.border_color = Color(0.6, 1.0, 0.65)
+	hts.set_border_width_all(3)
+	hts.set_corner_radius_all(14)
+	hts.content_margin_left = 16; hts.content_margin_right = 16
+	hts.content_margin_top = 6; hts.content_margin_bottom = 6
+	help_tag.add_theme_stylebox_override("normal", hts)
+	help_tag.position = Vector2(30, 395)
+	help_tag.size = Vector2(0, 0)
 	help_tag.visible = false
 	ammo_warn = _label("Mermi azalıyor — kapılardan geç, düşman vur", 43, hud, Color(1.0, 0.6, 0.25))
 	ammo_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ammo_warn.add_theme_constant_override("outline_size", 14)
 	ammo_warn.add_theme_font_override("font", bold)
 	ammo_warn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	ammo_warn.offset_top = -175
-	ammo_warn.offset_bottom = -95
+	ammo_warn.offset_top = -265
+	ammo_warn.offset_bottom = -175
 	ammo_warn.visible = false
 	banner = _label("", 64, hud, Color.WHITE)
 	banner.add_theme_font_override("font", bold)
 	banner.add_theme_color_override("font_outline_color", Color(0.2, 0.05, 0.0))
 	banner.add_theme_constant_override("outline_size", 18)
 	banner.visible = false
-	var hl := _label("Sürükle: nişan · Basılı tut: ateş · Düşman öldür: +mermi", 34, hud, Color(1, 1, 1, 0.7))
+	# v8.6: dar dikey ekranda okunur: buyuk, tam opak beyaz, kalin kontur, gerekirse 2 satir
+	var hl := _label("Sürükle: nişan · Basılı tut: ateş · Düşman öldür: +mermi", 46, hud, Color(1, 1, 1))
+	hl.add_theme_font_override("font", bold)
+	hl.add_theme_constant_override("outline_size", 14)
+	hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	hl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	hl.offset_top = -80
-	hl.offset_bottom = -30
+	hl.offset_left = 30
+	hl.offset_right = -30
+	hl.offset_top = -160
+	hl.offset_bottom = -24
 	hint = Control.new()
 	hint.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2709,7 +2756,9 @@ func _build_ui() -> void:
 		stars_box.add_child(sc)
 		var sp := _star(sc, 80, Color(0.3, 0.27, 0.4), Vector2(95, 100 - (16 if k == 1 else 0)))
 		res_stars.append(sp)
-	res_info = _label("", 44, rv, Color(1, 0.85, 0.2))
+	res_info = _label("", 50, rv, Color(1, 0.92, 0.45))
+	res_info.add_theme_font_override("font", bold)
+	res_info.add_theme_constant_override("outline_size", 14)
 	res_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# metin alani bastan ayrilir: yazi animasyonu sirasinda butonlar kaymaz
 	res_info.custom_minimum_size = Vector2(860, 500)
@@ -2734,10 +2783,9 @@ func _build_ui() -> void:
 	fl.add_child(fader)
 	load_card = _label("", 72, fader, Color(1, 1, 1))
 	load_card.add_theme_font_override("font", bold)
-	load_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	load_card.size = Vector2(1000, 120)
-	load_card.position = Vector2(-500, -60)
+	load_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)  # her en-boyda ortada, kesilmez
 	load_card.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	load_card.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	load_card.visible = false
 	_refresh_menu()
 
@@ -2863,8 +2911,8 @@ func _refresh_loadout() -> void:
 		var h := HBoxContainer.new()
 		h.add_theme_constant_override("separation", 16)
 		card_rows.add_child(h)
-		var l := _label("%s - %s" % [CARD_NAMES[ty], _card_desc(ty)], 32, h)
-		l.custom_minimum_size = Vector2(560, 0)
+		var l := _label("%s - %s" % [CARD_NAMES[ty], _card_desc(ty)], 40, h)
+		l.custom_minimum_size = Vector2(540, 0)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var tyy := ty
@@ -2880,8 +2928,8 @@ func _refresh_loadout() -> void:
 			var cost := 80 * (int(card_lv[ty]) + 1)
 			b = _btn("Sv.%d: %d coin" % [int(card_lv[ty]) + 2, cost] if card_lv[ty] < 5 else "MAKS", Color(0.55, 0.2, 0.9), h, func() -> void: _up_card(tyy))
 			b.disabled = coins < cost or card_lv[ty] >= 5
-		b.custom_minimum_size = Vector2(300, 90)
-		b.add_theme_font_size_override("font_size", 38 if b.text.length() <= 12 else 30)
+		b.custom_minimum_size = Vector2(340, 100)
+		b.add_theme_font_size_override("font_size", 44 if b.text.length() <= 12 else 38)
 
 func _buy_card(ty: int) -> void:
 	if coins >= CARD_COST[ty] and not owned[ty]:
@@ -3750,10 +3798,13 @@ var HB := [1.5, 3.0, 0.25, 0.3, 0.25, 1.2, 3.0]
 func _autoplay(lv: int) -> void:
 	# AP_MODE: smart (varsayilan, eski bot) | casual (gecikmeli/yanilan oyuncu) | hold (ortada basili tut)
 	var hb := OS.get_environment("AP_HB")
+	var mode := OS.get_environment("AP_MODE")
+	if mode == "weak":
+		# zayif insan: yarim isabet (x3/iyi kapi daha az, nisan hatasi 2x), gec tepki, yavas surukleme
+		HB = [2.5, 4.5, 0.12, 0.2, 0.3, 2.4, 2.0]
 	if hb != "":
 		var parts := hb.split(",")
 		for k in mini(parts.size(), HB.size()): HB[k] = float(parts[k])
-	var mode := OS.get_environment("AP_MODE")
 	if mode == "": mode = "smart"
 	var ts := float(OS.get_environment("AP_TS")) if OS.get_environment("AP_TS") != "" else 2.0
 	var shots := mode == "smart" and DisplayServer.get_name() != "headless"
@@ -3764,7 +3815,10 @@ func _autoplay(lv: int) -> void:
 		owned = [true, false, false, false]; slots = [0, 0, 0]
 		rate_lv = lv  # yeni oyuncu: her bolumden sonra 1 atis hizi yukseltmesi
 	var dir := "/workspace/riftrush-review/"
+	if OS.get_environment("AP_LOSS") != "":
+		lose_streak[lv] = int(OS.get_environment("AP_LOSS"))  # deneme: gercek yardim yolu (1 / 2+ yenilgi)
 	start_level(lv)
+	clock_scale = ts
 	Engine.time_scale = ts
 	holding = true
 	var shot_i := 0
@@ -3779,7 +3833,7 @@ func _autoplay(lv: int) -> void:
 		var gdt := get_process_delta_time() * ts
 		if mode == "hold":
 			cannon_x = 0.0
-		elif mode == "human":
+		elif mode == "human" or mode == "weak":
 			# insan benzeri: seyrek ve gec seri degisimi, buyuk nisan hatasi, x3'u sik kacirir, hep basili
 			rt -= gdt
 			if rt <= 0.0:
