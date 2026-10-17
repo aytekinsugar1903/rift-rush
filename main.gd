@@ -23,24 +23,24 @@ var is_low := false
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 194, "time": 162.0, "sections": [
+	{"ammo": 194, "time": 120.0, "sections": [
 		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
-	{"ammo": 200, "time": 162.0, "sections": [
+	{"ammo": 200, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
 		{"hp": 340, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
-	{"ammo": 186, "time": 162.0, "sections": [
+	{"ammo": 186, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 450, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
-	{"ammo": 110, "time": 176.0, "sections": [
+	{"ammo": 110, "time": 130.0, "sections": [
 		{"hp": 260, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "okcu", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
 		{"hp": 450, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.6], [-27.0, -2.2, 4.0, "dev", 0.0], [-27.0, 2.2, 4.0, "x2", 0.0]]},
 		{"hp": 800, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x2", 0.0], [-18.0, 0.0, 3.2, "x3", 2.4], [-27.0, -2.8, 2.8, "okcu", 0.0], [-27.0, 0.0, 2.8, "dev", 0.0], [-27.0, 2.8, 2.8, "-5", 0.0]]}]},
-	{"ammo": 120, "time": 189.0, "sections": [
+	{"ammo": 120, "time": 140.0, "sections": [
 		{"hp": 300, "spawn": 1.2, "brute": 0.15, "gates": [[-8.0, -2.8, 2.8, "x2", 0.0], [-8.0, 0.0, 2.8, "-5", 0.0], [-8.0, 2.8, 2.8, "x3", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.4], [-27.0, 0.0, 3.0, "dev", 2.0]]},
 		{"hp": 550, "spawn": 0.9, "brute": 0.22, "gates": [[-8.0, 0.0, 3.0, "x3", 2.6], [-17.0, -2.2, 4.0, "okcu", 0.0], [-17.0, 2.2, 4.0, "-5", 0.0], [-26.0, -2.2, 4.0, "x2", 0.0], [-26.0, 2.2, 4.0, "kalkan", 0.0]]},
 		{"hp": 950, "spawn": 0.75, "brute": 0.3, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "+10", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "okcu", 1.0], [-26.0, 2.8, 2.8, "-5", 0.0]]}]},
-	{"ammo": 130, "time": 203.0, "sections": [
+	{"ammo": 130, "time": 150.0, "sections": [
 		{"hp": 350, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, 0.0, 3.0, "-5", 2.8], [-14.0, -2.2, 4.0, "x3", 0.0], [-14.0, 2.2, 4.0, "kalkan", 0.0], [-24.0, 0.0, 3.0, "dev", 2.2]]},
 		{"hp": 650, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "okcu", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "-5", 0.0], [-26.0, 0.0, 2.8, "kalkan", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]},
 		{"hp": 1200, "spawn": 0.65, "brute": 0.32, "gates": [[-8.0, 0.0, 3.0, "x2", 2.6], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 4.0, "-5", 0.0], [-25.0, -2.2, 4.0, "dev", 0.0], [-25.0, 2.2, 4.0, "okcu", 0.0]]}]},
@@ -134,7 +134,6 @@ var drag_sum := 0.0
 var hint_fire_t := 0.0
 var hint_t := 0.0
 var test_run := false
-var clock_us := 0
 var posts_sent := 0
 var res_btns: Array = []
 var res_lock_id := 0
@@ -154,7 +153,6 @@ var STEER_GAIN := 1.0       # ekran degisti: eski basis birakilana kadar girdiyi
 var lose_streak := {}      # bolum -> ust uste yenilgi (oturum ici)
 var help_on := false
 var help_cut := 0.0          # yardimda boss cani + dalga boyu indirimi
-var clock_scale := 1.0       # sure gercek zamanla akar (autoplay hizlandirmasinda AP_TS)
 var help_tag: Label = null
 var ammo_chip: Control = null
 var board_ref: Control = null
@@ -1514,7 +1512,7 @@ func _daily_level() -> Dictionary:
 			var a: String = ops[rng.randi() % ops.size()]
 			var b: String = ops[rng.randi() % ops.size()]
 			gs.append([z, -2.2, 4.0, a, 0.0]); gs.append([z, 2.2, 4.0, b, 0.0])
-	return {"ammo": 400, "time": 162.0, "sections": [{"hp": 260 + rng.randi() % 140, "spawn": rng.randf_range(1.0, 1.6), "brute": 0.12, "gates": gs}]}
+	return {"ammo": 400, "time": 120.0, "sections": [{"hp": 260 + rng.randi() % 140, "spawn": rng.randf_range(1.0, 1.6), "brute": 0.12, "gates": gs}]}
 
 func start_daily() -> void:
 	menu_mode = false
@@ -1861,18 +1859,13 @@ func _process(dt: float) -> void:
 	_fit_panels()
 	var t0 := Time.get_ticks_usec()
 	var now := Time.get_ticks_usec()
-	var rdt := 0.016 if last_us == 0 else clampf((now - last_us) / 1000000.0, 0.0, 0.25)
+	# v8.8: dusuk FPS'te (>=1 fps) oyun tam hizda akar (0.05 sn alt adimlar); 1 sn ustu sicrama
+	# (sekme degisimi, uygulama arka planda) ileri sarmaz, o kare duraklama sayilir
+	var raw := 0.016 if last_us == 0 else (now - last_us) / 1000000.0
+	var rdt := 0.0 if raw > 1.0 else clampf(raw, 0.0, 1.0)
 	last_us = now
 	if bench: rdt = dt
 	var rem := rdt * Engine.time_scale
-	# sure gercek zamanla akar (yavas cekim, kale gecisi, dusuk FPS onu yavaslatmaz)
-	if playing and not menu_mode and not bench:
-		var now_c := Time.get_ticks_usec()
-		var cdt := 0.0 if clock_us == 0 else clampf((now_c - clock_us) / 1000000.0, 0.0, 1.0)
-		clock_us = now_c
-		time_left -= cdt * clock_scale
-	else:
-		clock_us = 0
 	while playing and not advancing and rem > 0.00001:
 		var stp := minf(rem, 0.05)
 		_sim(stp)
@@ -1882,7 +1875,7 @@ func _process(dt: float) -> void:
 
 func _sim(dt: float) -> void:
 	var S: Dictionary = cur_L["sections"][sec]
-	if bench or menu_mode: time_left -= dt
+	time_left -= dt   # v8.8: sure oyun zamaniyla akar
 	if holding and ammo > 0:
 		hint_fire_t += dt
 		fire_acc += dt * _fire_rate()
@@ -3878,9 +3871,8 @@ func _autoplay(lv: int) -> void:
 	if OS.get_environment("AP_LOSS") != "":
 		lose_streak[lv] = int(OS.get_environment("AP_LOSS"))  # deneme: gercek yardim yolu (1 / 2+ yenilgi)
 	start_level(lv)
-	clock_scale = ts
-	if OS.get_environment("AP_SIMSPEED") != "":
-		clock_scale = ts / float(OS.get_environment("AP_SIMSPEED"))  # deneme: yavas cihaz (oyun dunyasi gercek zamanin bu orani hizinda)
+	if OS.get_environment("AP_FPS") != "":
+		Engine.max_fps = int(OS.get_environment("AP_FPS"))  # deneme: dusuk FPS'li yavas cihaz
 	Engine.time_scale = ts
 	holding = true
 	var shot_i := 0
