@@ -26,6 +26,22 @@ const LEVELS := [
 		{"hp": 1000, "spawn": 0.7, "brute": 0.3, "gates": [[-8.0, 0.0, 3.0, "x2", 2.6], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 4.0, "-5", 0.0], [-25.0, 0.0, 3.0, "x2", 2.4]]}]},
 ]
 
+const PORTAL_SHADER := """
+shader_type spatial;
+render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;
+void fragment() {
+	vec2 p = UV * 2.0 - 1.0;
+	float r = length(p);
+	float a = atan(p.y, p.x);
+	float sw = sin(a * 5.0 + TIME * 3.0 - r * 14.0) * 0.5 + 0.5;
+	float sw2 = sin(a * 3.0 - TIME * 2.0 + r * 9.0) * 0.5 + 0.5;
+	float ring = smoothstep(0.6, 0.76, r) * (1.0 - smoothstep(0.84, 1.0, r));
+	float inner = (1.0 - smoothstep(0.0, 0.78, r)) * (0.25 + 0.45 * sw * sw2);
+	vec3 c = mix(vec3(0.45, 0.1, 1.0), vec3(1.0, 0.5, 1.0), sw);
+	ALBEDO = c * (ring * (1.3 + sw) + inner);
+}
+"""
+
 const UNIT_SHADER := """
 shader_type spatial;
 uniform vec3 col;
@@ -134,6 +150,9 @@ var cpu_us: Array = []
 
 func _ready() -> void:
 	_load()
+	bold = FontVariation.new()
+	bold.base_font = ThemeDB.fallback_font
+	bold.variation_embolden = 1.1
 	await _bake_units()
 	_build_world()
 	_build_ui()
@@ -286,22 +305,144 @@ func _asset_mesh(path: String) -> ArrayMesh:
 	add_child(n)
 	var m := _flatten(n)
 	n.queue_free()
+	if path.contains("/nature/"):
+		for si in m.get_surface_count():
+			var sm := m.surface_get_material(si)
+			if sm is StandardMaterial3D:
+				var c: Color = (sm as StandardMaterial3D).albedo_color
+				if c.b > c.r and c.g > c.r:
+					var nm: StandardMaterial3D = sm.duplicate()
+					nm.albedo_color = Color.from_hsv(0.27, clampf(c.s * 1.1, 0.5, 0.8), c.v)
+					m.surface_set_material(si, nm)
 	mesh_cache[path] = m
 	return m
 
+var frames_p: Array = []
+var frames_e: Array = []
+var frames_b: Array = []
+var soldier_raw: Array = []
+var soldier_kinds: Array = []
+var us := 1.0
+var bs := 1.0
+var bold: FontVariation
+var sfx_players: Array = []
+var sfx_streams: Dictionary = {}
+var sfx_last: Dictionary = {}
+var sfx_i := 0
+var dust: Array = []
+var dust_i := 0
+var dust_t := 0.0
+var pa := PackedFloat32Array()
+var fly := PackedFloat32Array()  # x,y,z,vx,vy,vz,life,team (8'li)
+var fly_mm: Array = []
+var fly_buf: Array = []
+var brute_mm: MultiMesh
+var brute_buf := PackedFloat32Array()
+var spark_n := 0
+
 func _bake_units() -> void:
-	var ch := _glb("res://assets/chars/character-male-a.glb")
+	# Kenney Mini Arena 'character-soldier' (kask/zirh) + kilic + kalkan; sprint animasyonu NF kareye pisirilir
+	var ch := _glb("res://assets/arena/character-soldier.glb")
 	add_child(ch)
+	var sk: Skeleton3D = ch.find_child("Skeleton3D", true, false)
 	var ap: AnimationPlayer = ch.find_child("AnimationPlayer", true, false)
 	ap.play("sprint")
 	ap.speed_scale = 0.0
 	var L := ap.current_animation_length
+	var sw := _glb("res://assets/arena/weapon-sword.glb")
+	add_child(sw)
+	var swm: Array = sw.find_children("*", "MeshInstance3D", true, false)
+	var sword_mi: MeshInstance3D = sw as MeshInstance3D if sw is MeshInstance3D else swm[0]
+	var shield := CylinderMesh.new()
+	shield.top_radius = 0.085; shield.bottom_radius = 0.085; shield.height = 0.03; shield.radial_segments = 10; shield.rings = 1
+	var ra := sk.find_bone("arm-right")
+	var la := sk.find_bone("arm-left")
+	var hb := sk.find_bone("head")
 	for f in NF:
 		ap.seek(L * f / NF, true)
 		await get_tree().process_frame
-		unit_frames.append(_flatten(ch, true))
-	unit_mat = (unit_frames[0] as ArrayMesh).surface_get_material(0)
+		var inv := ch.global_transform.affine_inverse()
+		var skx := inv * sk.global_transform
+		var out := ArrayMesh.new()
+		var kinds: Array = []
+		for mi: MeshInstance3D in ch.find_children("*", "MeshInstance3D", true, false):
+			var m: Mesh = mi.bake_mesh_from_current_skeleton_pose() if mi.skin != null else mi.mesh
+			var xf := inv * mi.global_transform
+			var kind := "head" if String(mi.name).begins_with("head") else "body"
+			if kind == "head":
+				var h: Vector3 = skx * sk.get_bone_global_pose(hb).origin
+				xf = Transform3D(Basis(), h) * Transform3D(Basis().scaled(Vector3.ONE * 0.82), Vector3.ZERO) * Transform3D(Basis(), -h) * xf
+			for si in m.get_surface_count():
+				var st := SurfaceTool.new(); st.append_from(m, si, xf); st.commit(out)
+				out.surface_set_material(out.get_surface_count() - 1, mi.get_active_material(si))
+				kinds.append(kind)
+		var rp: Transform3D = skx * sk.get_bone_global_pose(ra)
+		var sxf := rp * Transform3D(Basis(Vector3.RIGHT, PI * 0.75).scaled(Vector3.ONE * 0.3), Vector3(-0.02, -0.1, -0.02))
+		var st2 := SurfaceTool.new(); st2.append_from(sword_mi.mesh, 0, sxf); st2.commit(out)
+		out.surface_set_material(out.get_surface_count() - 1, sword_mi.get_active_material(0)); kinds.append("prop")
+		var lp: Transform3D = skx * sk.get_bone_global_pose(la)
+		var st3 := SurfaceTool.new(); st3.append_from(shield, 0, lp * Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(0.05, -0.08, 0.0))); st3.commit(out)
+		kinds.append("shield")
+		soldier_raw.append(out)
+		soldier_kinds = kinds
+	unit_mat = (soldier_raw[0] as ArrayMesh).surface_get_material(0)
+	us = 1.15 / maxf(0.1, (soldier_raw[0] as ArrayMesh).get_aabb().size.y)
 	ch.queue_free()
+	sw.queue_free()
+	# brute: Kenney Blocky Characters (farkli, iri model)
+	var bc := _glb("res://assets/blocky/character-k.glb")
+	add_child(bc)
+	var bap: AnimationPlayer = bc.find_child("AnimationPlayer", true, false)
+	bap.play("sprint")
+	bap.speed_scale = 0.0
+	var BL := bap.current_animation_length
+	for f in NF:
+		bap.seek(BL * f / NF, true)
+		await get_tree().process_frame
+		frames_b.append(_flatten(bc, true))
+	bs = 2.3 / maxf(0.1, (frames_b[0] as ArrayMesh).get_aabb().size.y)
+	bc.queue_free()
+
+const TEAM_SHADER := """
+shader_type spatial;
+uniform sampler2D tex : source_color, filter_nearest;
+uniform vec3 team : source_color;
+void fragment() {
+	vec3 c = texture(tex, UV).rgb;
+	float mx = max(c.r, max(c.g, c.b));
+	float mn = min(c.r, min(c.g, c.b));
+	float sat = (mx - mn) / max(mx, 0.001);
+	float warm = (c.r >= c.g && c.g >= c.b) ? smoothstep(0.45, 0.65, sat) : 0.0;
+	ALBEDO = mix(c, team * (0.35 + mx * 0.9), warm);
+	ROUGHNESS = 0.55;
+	RIM = 0.3;
+	RIM_TINT = 0.3;
+}
+"""
+
+func _team_frames(tint: Color, shield_col: Color) -> Array:
+	var body := ShaderMaterial.new()
+	var tsh := Shader.new()
+	tsh.code = TEAM_SHADER
+	body.shader = tsh
+	if unit_mat is StandardMaterial3D:
+		body.set_shader_parameter("tex", (unit_mat as StandardMaterial3D).albedo_texture)
+	body.set_shader_parameter("team", tint)
+	var sh := _mat(shield_col, 0.25, 1.0, 0.5, 0.3)
+	var hm := body
+	var res: Array = []
+	for raw: ArrayMesh in soldier_raw:
+		var m := ArrayMesh.new()
+		for si in raw.get_surface_count():
+			m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, raw.surface_get_arrays(si))
+			m.surface_set_material(si, raw.surface_get_material(si))
+		for si in m.get_surface_count():
+			match soldier_kinds[si]:
+				"body": m.surface_set_material(si, body)
+				"head": m.surface_set_material(si, hm)
+				"shield": m.surface_set_material(si, sh)
+		res.append(m)
+	return res
 
 func _team_mat(tint: Color, glow: Color, ge := 0.3) -> Material:
 	var m: StandardMaterial3D
@@ -314,7 +455,8 @@ func _team_mat(tint: Color, glow: Color, ge := 0.3) -> Material:
 	m.emission = glow
 	m.emission_energy_multiplier = ge
 	m.rim_enabled = true
-	m.rim = 0.6
+	m.rim = 0.3
+	m.rim_tint = 0.2
 	return m
 
 func _scatter(path: String, xfs: Array, parent: Node, mat: Material = null) -> void:
@@ -342,7 +484,7 @@ var shadows_on := false
 
 # ---------------- dunya ----------------
 func _build_world() -> void:
-	shadows_on = OS.get_environment("SHADOWS") == "1"  # varsayilan kapali (mobil/web performansi)
+	shadows_on = OS.get_environment("SHADOWS") == "1" or not (OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios") or OS.get_environment("SHADOWS") == "0")
 	var env := Environment.new()
 	var sky := Sky.new()
 	var psm := ProceduralSkyMaterial.new()
@@ -355,15 +497,19 @@ func _build_world() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.85, 0.85, 0.95)
-	env.ambient_light_energy = 0.55
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_white = 2.2
+	env.ambient_light_color = Color(1.0, 0.95, 0.85)
+	env.ambient_light_energy = 0.45
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.2
+	env.adjustment_brightness = 1.0
+	env.adjustment_contrast = 1.05
+	env.tonemap_white = 3.0
 	env.glow_enabled = true
 	env.glow_intensity = 0.35
-	env.glow_hdr_threshold = 1.2
+	env.glow_hdr_threshold = 1.6
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.75, 0.87, 1.0)
+	env.fog_light_color = Color(0.92, 0.94, 1.0)
 	env.fog_density = 0.0025
 	env.fog_sky_affect = 0.3
 	var we := WorldEnvironment.new()
@@ -371,8 +517,8 @@ func _build_world() -> void:
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -40, 0)
-	sun.light_energy = 1.1
-	sun.light_color = Color(1.0, 0.96, 0.88)
+	sun.light_energy = 1.0
+	sun.light_color = Color(1.0, 0.92, 0.78)
 	sun.shadow_enabled = shadows_on
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 50.0
@@ -433,22 +579,22 @@ func _build_world() -> void:
 	flash_light.position = Vector3(0, 1.5, -1.8)
 	barrel.add_child(flash_light)
 
-	# birimler: Kenney Mini Characters 'sprint' animasyonu NF kareye pisirildi
-	var pmat := _team_mat(Color(0.8, 1.0, 1.0), CYAN, 0.75)
-	var emat := _team_mat(Color(1.0, 0.7, 0.6), ENEMY, 0.55)
+	# birimler
+	frames_p = _team_frames(Color(0.1, 0.75, 1.0), CYAN)
+	frames_e = _team_frames(Color(1.0, 0.3, 0.1), ENEMY)
 	var per_p := MAXP / NF + 1
 	var per_e := MAXE / NF + 1
+	var shad := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows_on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for g in NF:
 		for team in 2:
 			var mm := MultiMesh.new()
 			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = unit_frames[g]
+			mm.mesh = frames_p[g] if team == 0 else frames_e[g]
 			mm.instance_count = per_p if team == 0 else per_e
 			mm.visible_instance_count = 0
 			var mi := MultiMeshInstance3D.new()
 			mi.multimesh = mm
-			mi.material_override = pmat if team == 0 else emat
-			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.cast_shadow = shad
 			mi.extra_cull_margin = 400.0
 			add_child(mi)
 			var b := PackedFloat32Array()
@@ -457,6 +603,50 @@ func _build_world() -> void:
 				pmms.append(mm); pbufs.append(b)
 			else:
 				emms.append(mm); ebufs.append(b)
+	brute_mm = MultiMesh.new()
+	brute_mm.transform_format = MultiMesh.TRANSFORM_3D
+	brute_mm.mesh = frames_b[0]
+	brute_mm.instance_count = 120
+	brute_mm.visible_instance_count = 0
+	brute_buf.resize(120 * 12)
+	var bmi := MultiMeshInstance3D.new()
+	bmi.multimesh = brute_mm
+	bmi.material_override = _team_mat(Color(1.0, 0.5, 0.4), ENEMY, 0.1)
+	bmi.cast_shadow = shad
+	bmi.extra_cull_margin = 400.0
+	add_child(bmi)
+	for team in 2:
+		var fm := MultiMesh.new()
+		fm.transform_format = MultiMesh.TRANSFORM_3D
+		fm.mesh = frames_p[0] if team == 0 else frames_e[0]
+		fm.instance_count = 160
+		fm.visible_instance_count = 0
+		var fmi := MultiMeshInstance3D.new()
+		fmi.multimesh = fm
+		fmi.extra_cull_margin = 400.0
+		add_child(fmi)
+		fly_mm.append(fm)
+		var fb := PackedFloat32Array(); fb.resize(160 * 12)
+		fly_buf.append(fb)
+	var dm := StandardMaterial3D.new()
+	dm.vertex_color_use_as_albedo = true
+	dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var dmesh := SphereMesh.new(); dmesh.radius = 0.35; dmesh.height = 0.5; dmesh.radial_segments = 6; dmesh.rings = 3; dmesh.material = dm
+	for i in 6:
+		var p := _particles(dmesh, 8, 0.6, 1.0, 2.5, 1.5)
+		p.spread = 90
+		var gr := Gradient.new()
+		gr.set_color(0, Color(0.95, 0.88, 0.75, 0.8))
+		gr.set_color(1, Color(0.95, 0.88, 0.75, 0.0))
+		p.color_ramp = gr
+		dust.append(p)
+	for k in ["shot", "gate", "hit", "explode", "basehit", "win", "lose"]:
+		sfx_streams[k] = load("res://assets/sfx/%s.ogg" % k)
+	for i in 10:
+		var ap := AudioStreamPlayer.new()
+		add_child(ap)
+		sfx_players.append(ap)
 
 	var pm := StandardMaterial3D.new()
 	pm.vertex_color_use_as_albedo = true
@@ -519,6 +709,23 @@ func _build_island(total: float) -> void:
 	_scatter("res://assets/nature/rock_tallB.glb", rocks, level_root)
 	_scatter("res://assets/nature/cliff_large_rock.glb", cliffs, level_root)
 
+func sfx(k: String, db := 0.0, gap := 0.05, pv := 0.12) -> void:
+	var now := t
+	if sfx_last.has(k) and now - float(sfx_last[k]) < gap: return
+	sfx_last[k] = now
+	var ap: AudioStreamPlayer = sfx_players[sfx_i]
+	sfx_i = (sfx_i + 1) % sfx_players.size()
+	ap.stream = sfx_streams[k]
+	ap.volume_db = db
+	ap.pitch_scale = randf_range(1.0 - pv, 1.0 + pv)
+	ap.play()
+
+func puff(pos: Vector3) -> void:
+	var p: CPUParticles3D = dust[dust_i]
+	dust_i = (dust_i + 1) % dust.size()
+	p.position = pos
+	p.restart()
+
 func burst(pos: Vector3, c: Color, amount := 20) -> void:
 	var p: CPUParticles3D = parts[part_i]
 	part_i = (part_i + 1) % parts.size()
@@ -539,7 +746,8 @@ func pop_text(pos: Vector3, txt: String, c: Color, big := false) -> void:
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.font_size = 170 if big else 130
 	l.pixel_size = 0.009
-	l.outline_size = 32
+	l.outline_size = 40
+	l.font = bold
 	l.modulate = c
 	l.no_depth_test = true
 	l.position = pos
@@ -571,7 +779,8 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	lb.text = String(gd[3]).replace("x", "×")
 	lb.font_size = 220
 	lb.pixel_size = 0.0105
-	lb.outline_size = 44
+	lb.outline_size = 64
+	lb.font = bold
 	lb.outline_modulate = col.darkened(0.6)
 	lb.position = Vector3(0, 1.7, 0.4)
 	lb.rotation_degrees = Vector3(-20, 0, 0)
@@ -602,12 +811,20 @@ func _make_base(z_world: float, boss: bool) -> Dictionary:
 		_place(C + "tower-hexagon-roof.glb", Vector3(0, S * 4.2, -2.4), S * 1.4, 0.0, n)
 		_place(C + "flag-banner-long.glb", Vector3(-1.5, S * 1.3, 1.3), S, 0.0, n)
 		_place(C + "flag-banner-long.glb", Vector3(1.5, S * 1.3, 1.3), S, 0.0, n)
+	var dmg := StandardMaterial3D.new()
+	dmg.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dmg.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dmg.albedo_color = Color(0.12, 0.05, 0.03, 0.0)
+	for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
+		mi.material_overlay = dmg
 	# tema vurgusu: kalenin arkasinda mor yarik + kristaller
-	var rift := _mesh(TorusMesh.new(), Vector3(0, 6.5 if not boss else 9.5, -4.5), _mat(PURPLE, 3.0), n, Vector3(90, 0, 0), false)
-	(rift.mesh as TorusMesh).inner_radius = 1.8
-	(rift.mesh as TorusMesh).outer_radius = 2.2
-	var core := _cyl(1.8, 1.8, 0.05, Vector3.ZERO, _mat(Color(0.45, 0.1, 0.75), 1.6, 0.7), rift, 24)
-	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var pq := QuadMesh.new()
+	pq.size = Vector2(7.5, 7.5)
+	var psm := ShaderMaterial.new()
+	var psh := Shader.new()
+	psh.code = PORTAL_SHADER
+	psm.shader = psh
+	var rift := _mesh(pq, Vector3(0, 6.0 if not boss else 9.0, -4.5), psm, n, Vector3.ZERO, false)
 	var crm := _mat(PURPLE, 1.2)
 	for s in [-1, 1]:
 		var cr := _place("res://assets/td/detail-crystal-large.glb", Vector3(s * 6.6, 0, -1.0), 4.0, randf() * TAU, n)
@@ -621,11 +838,11 @@ func _make_base(z_world: float, boss: bool) -> Dictionary:
 	n.add_child(ol)
 	if boss:
 		n.scale = Vector3.ONE * 1.25
-	return {"node": n, "body": StandardMaterial3D.new(), "rift": rift, "cracks": 0}
+	return {"node": n, "body": dmg, "rift": Node3D.new(), "cracks": 0}
 
 # ---------------- seviye ----------------
 func _clear_units() -> void:
-	px.clear(); pz.clear(); pdx.clear(); pmask.clear()
+	px.clear(); pz.clear(); pdx.clear(); pmask.clear(); pa.clear(); fly.clear()
 	ex.clear(); ez.clear(); ehp.clear(); esc.clear()
 
 func start_level(i: int) -> void:
@@ -681,12 +898,12 @@ func _fire_rate() -> float:
 
 func _add_p(x: float, z: float, dx: float, mask: int) -> void:
 	if px.size() >= MAXP: return
-	px.append(x); pz.append(z); pdx.append(dx); pmask.append(mask)
+	px.append(x); pz.append(z); pdx.append(dx); pmask.append(mask); pa.append(0.0)
 
 func _kill_p(i: int) -> void:
 	var l := px.size() - 1
-	px[i] = px[l]; pz[i] = pz[l]; pdx[i] = pdx[l]; pmask[i] = pmask[l]
-	px.resize(l); pz.resize(l); pdx.resize(l); pmask.resize(l)
+	px[i] = px[l]; pz[i] = pz[l]; pdx[i] = pdx[l]; pmask[i] = pmask[l]; pa[i] = pa[l]
+	px.resize(l); pz.resize(l); pdx.resize(l); pmask.resize(l); pa.resize(l)
 
 func _kill_e(j: int) -> void:
 	var l := ex.size() - 1
@@ -708,6 +925,8 @@ func _input(e: InputEvent) -> void:
 # ---------------- dongu ----------------
 func _process(dt: float) -> void:
 	if cam == null: return
+	var ws := get_window().size
+	get_window().content_scale_factor = 1.7 if ws.x > ws.y else 1.0
 	t += dt
 	for c in crystals:
 		(c[0] as Node3D).position.y = c[1] + sin(t * 1.2 + c[2]) * 0.4
@@ -750,10 +969,10 @@ func _process(dt: float) -> void:
 	# kamera: topun arkasi, alcak acı, ordu ilerledikce ileri itilir
 	cam_push = lerpf(cam_push, clampf(-front * 0.12, 0.0, 3.5), minf(1.0, dt * 2.0))
 	var cz := cannon.position.z
-	var target := Vector3(barrel.position.x * 0.35, 10.5, cz + 11.5 - cam_push)
+	var target := Vector3(barrel.position.x * 0.35, 13.5, cz + 9.0 - cam_push)
 	cam.position = cam.position.lerp(target, minf(1.0, dt * 4.0))
 	var sh := trauma * trauma * 0.5
-	cam.look_at(Vector3(barrel.position.x * 0.2, 0, cam.position.z - 22.0) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
+	cam.look_at(Vector3(barrel.position.x * 0.2, 0, cam.position.z - 20.0) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
 	var t0 := Time.get_ticks_usec()
 	if playing and not advancing:
 		_sim(dt)
@@ -770,6 +989,11 @@ func _sim(dt: float) -> void:
 			ammo -= 1
 			_add_p(barrel.position.x + randf_range(-0.2, 0.2), -1.0, randf_range(-0.6, 0.6), 0)
 			barrel.position.z = 0.35
+			sfx("shot", -10.0, 0.07)
+			dust_t -= 1.0
+			if dust_t <= 0.0:
+				dust_t = 3.0
+				puff(Vector3(barrel.position.x, 0.3, sec_off + 0.2))
 			flash_t = 1.0
 	else:
 		fire_acc = minf(fire_acc, 1.0)
@@ -795,6 +1019,7 @@ func _sim(dt: float) -> void:
 			x = clampf(x, -LANE, LANE)
 		px[i] = x
 		pz[i] = z1
+		pa[i] += dt
 		front = minf(front, z1)
 		if z1 <= BASE_Z + 1.8:
 			base_hits += 1
@@ -841,9 +1066,11 @@ func _sim(dt: float) -> void:
 				create_tween().tween_property(pm, "emission_energy_multiplier", 0.8, 0.25)
 				burst(nd.position + Vector3(0, 1.5, 0), g["col"], 14)
 				g["pend"] = 0
+				sfx("gate", -8.0, 0.12)
 	var B: Dictionary = bases[sec]
 	if base_hits > 0:
 		base_hp -= base_hits
+		sfx("basehit", -6.0, 0.09)
 		trauma = minf(1.0, trauma + 0.03 * base_hits)
 		var bn: Node3D = B["node"]
 		var bs: float = 1.25 if sec == bases.size() - 1 else 1.0
@@ -857,7 +1084,7 @@ func _sim(dt: float) -> void:
 		var want := 3 if ratio < 0.25 else (2 if ratio < 0.5 else (1 if ratio < 0.75 else 0))
 		while B["cracks"] < want:
 			B["cracks"] += 1
-			(B["body"] as StandardMaterial3D).albedo_color = (B["body"] as StandardMaterial3D).albedo_color.darkened(0.22)
+			(B["body"] as StandardMaterial3D).albedo_color = Color(0.12, 0.05, 0.03, 0.2 * B["cracks"])
 			for k in 3:
 				var cr := _box(Vector3(randf_range(0.1, 0.2), randf_range(1.0, 2.2), 0.08), Vector3(randf_range(-2.8, 2.8), randf_range(1.0, 3.0), 1.55), _mat(Color(0.05, 0.02, 0.02), 0.0), bn, false)
 				cr.rotation.z = randf_range(-0.8, 0.8)
@@ -871,6 +1098,7 @@ func _sim(dt: float) -> void:
 			ex.append(randf_range(-2.5, 2.5)); ez.append(BASE_Z + 2.6 + k * 0.6)
 			ehp.append(10 if brute else 1); esc.append(1.9 if brute else 1.0)
 		burst(Vector3(0, 2, (B["node"] as Node3D).position.z + 2.0), PURPLE, 16)
+	spark_n = 0
 	for k in buckets.size():
 		buckets[k] = PackedInt32Array()
 	var np := px.size()
@@ -903,11 +1131,17 @@ func _sim(dt: float) -> void:
 				if ddx * ddx + ddz * ddz < r2:
 					dead[idx] = 1
 					hp -= 1
+					_fly(px[idx], pz[idx], 0)
+					if spark_n < 3:
+						spark_n += 1
+						burst(Vector3(px[idx], 0.9, pz[idx] + sec_off), Color(1, 0.9, 0.4), 10)
+						sfx("hit", -9.0, 0.06)
 					if hp <= 0: break
 			if hp <= 0: break
 		ehp[j] = hp
 		if hp <= 0:
 			burst(Vector3(exj, 0.8, ezj + sec_off), ENEMY if esc[j] < 1.5 else Color(1, 0.8, 0.2), 18)
+			if esc[j] < 1.5: _fly(exj, ezj, 1)
 			if esc[j] > 1.5:
 				trauma = minf(1.0, trauma + 0.3)
 				chunk_burst(Vector3(exj, 1, ezj + sec_off), ENEMY)
@@ -915,9 +1149,9 @@ func _sim(dt: float) -> void:
 	for i in range(np - 1, -1, -1):
 		if dead[i] == 1:
 			_kill_p(i)
-	lbl_time.text = "%d sn" % ceili(maxf(0.0, time_left))
-	lbl_ammo.text = "Mermi: %d" % ammo
-	lbl_units.text = "Ordu: %d" % px.size()
+	lbl_time.text = "%d" % ceili(maxf(0.0, time_left))
+	lbl_ammo.text = "%d" % ammo
+	lbl_units.text = "%d" % px.size()
 	(sec_bars[sec] as ProgressBar).value = 100.0 - float(maxi(base_hp, 0)) / base_max * 100.0
 	if base_hp <= 0:
 		_base_destroyed()
@@ -930,7 +1164,12 @@ func _sim(dt: float) -> void:
 		if end_grace > 0.6:
 			_lose("Ordun tükendi!")
 
+func _fly(x: float, z: float, team: int) -> void:
+	if fly.size() >= 300 * 8: return
+	fly.append_array(PackedFloat32Array([x, 0.0, z, randf_range(-2.5, 2.5), randf_range(5.0, 8.0), (3.5 if team == 0 else -3.5) + randf_range(-1, 1), 0.0, float(team)]))
+
 func _base_destroyed() -> void:
+	sfx("explode", 0.0, 0.0, 0.05)
 	var B: Dictionary = bases[sec]
 	var bn: Node3D = B["node"]
 	trauma = 1.0
@@ -966,41 +1205,83 @@ func _base_destroyed() -> void:
 func _render() -> void:
 	var step := int(t * 16.0)
 	var n := px.size()
+	var S := us
 	for g in NF:
 		var b: PackedFloat32Array = pbufs[g]
 		var k := 0
 		var i := g
 		while i < n:
 			var o := k * 12
-			b[o] = -1.7; b[o + 5] = 1.7; b[o + 10] = -1.7
+			var sc := S * minf(1.0, 0.25 + pa[i] * 6.0)
+			b[o] = -sc; b[o + 5] = sc; b[o + 10] = -sc
 			b[o + 3] = px[i]; b[o + 7] = 0.05; b[o + 11] = pz[i] + sec_off
 			k += 1
 			i += NF
 		var mm: MultiMesh = pmms[g]
-		mm.mesh = unit_frames[(g + step) % NF]
+		mm.mesh = frames_p[(g + step) % NF]
 		mm.buffer = b
 		mm.visible_instance_count = k
 		pbufs[g] = b
 	var m := ex.size()
+	var nb := 0
 	for g in NF:
 		var b: PackedFloat32Array = ebufs[g]
 		var k := 0
 		var j := g
 		while j < m:
-			var o := k * 12
-			var s: float = esc[j] * 2.0
-			b[o] = s; b[o + 5] = s; b[o + 10] = s
-			b[o + 3] = ex[j]; b[o + 7] = 0.05; b[o + 11] = ez[j] + sec_off
-			k += 1
+			if esc[j] > 1.5:
+				if g == 0 and nb < 120:
+					var o2 := nb * 12
+					brute_buf[o2] = bs; brute_buf[o2 + 5] = bs; brute_buf[o2 + 10] = bs
+					brute_buf[o2 + 3] = ex[j]; brute_buf[o2 + 7] = 0.05; brute_buf[o2 + 11] = ez[j] + sec_off
+					nb += 1
+			else:
+				var o := k * 12
+				b[o] = S; b[o + 5] = S; b[o + 10] = S
+				b[o + 3] = ex[j]; b[o + 7] = 0.05; b[o + 11] = ez[j] + sec_off
+				k += 1
 			j += NF
 		var mm: MultiMesh = emms[g]
-		mm.mesh = unit_frames[(g + step + 3) % NF]
+		mm.mesh = frames_e[(g + step + 3) % NF]
 		mm.buffer = b
 		mm.visible_instance_count = k
 		ebufs[g] = b
+	brute_mm.mesh = frames_b[int(t * 10.0) % NF]
+	brute_mm.buffer = brute_buf
+	brute_mm.visible_instance_count = nb
+	# ucusan olumler
+	var dt := get_process_delta_time()
+	var cnt := [0, 0]
+	var fi := fly.size() - 8
+	while fi >= 0:
+		fly[fi + 6] += dt
+		if fly[fi + 6] > 0.9:
+			var last := fly.size() - 8
+			for q in 8: fly[fi + q] = fly[last + q]
+			fly.resize(last)
+		else:
+			fly[fi + 4] -= 22.0 * dt
+			fly[fi] += fly[fi + 3] * dt; fly[fi + 1] = maxf(0.0, fly[fi + 1] + fly[fi + 4] * dt); fly[fi + 2] += fly[fi + 5] * dt
+			var tm := int(fly[fi + 7])
+			if cnt[tm] < 160:
+				var fb: PackedFloat32Array = fly_buf[tm]
+				var o: int = cnt[tm] * 12
+				var a := fly[fi + 6] * 14.0
+				var c := cos(a) * S
+				var sn := sin(a) * S
+				fb[o] = S; fb[o + 1] = 0; fb[o + 2] = 0; fb[o + 3] = fly[fi]
+				fb[o + 4] = 0; fb[o + 5] = c; fb[o + 6] = -sn; fb[o + 7] = fly[fi + 1]
+				fb[o + 8] = 0; fb[o + 9] = sn; fb[o + 10] = c; fb[o + 11] = fly[fi + 2] + sec_off
+				fly_buf[tm] = fb
+				cnt[tm] += 1
+		fi -= 8
+	for tm in 2:
+		(fly_mm[tm] as MultiMesh).buffer = fly_buf[tm]
+		(fly_mm[tm] as MultiMesh).visible_instance_count = cnt[tm]
 
 # ---------------- sonuc ----------------
 func _win() -> void:
+	sfx("win", -2.0, 0.0, 0.0)
 	playing = false
 	holding = false
 	earned = 40 + 30 * (level + 1) + mini(ammo, 150) + int(time_left)
@@ -1019,6 +1300,7 @@ func _win() -> void:
 	_show_result()
 
 func _lose(why: String) -> void:
+	sfx("lose", -2.0, 0.0, 0.0)
 	playing = false
 	holding = false
 	res_title.text = "YENİLDİN"
@@ -1132,17 +1414,19 @@ func _build_ui() -> void:
 	hud.add_child(top)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 40)
+	row.add_theme_constant_override("separation", 18)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(row)
-	lbl_level = _label("BÖLÜM 1", 42, row, CYAN)
-	lbl_time = _label("60 sn", 42, row)
-	lbl_ammo = _label("Mermi: 0", 42, row)
+	lbl_level = _label("BÖLÜM 1", 46, top, Color(1, 1, 1))
+	top.move_child(lbl_level, 0)
+	lbl_time = _chip(row, Color(1.0, 0.8, 0.2), "time")
+	lbl_ammo = _chip(row, Color(1.0, 0.5, 0.2), "ammo")
+	lbl_units = _chip(row, CYAN, "army")
 	var hc := CenterContainer.new()
 	top.add_child(hc)
 	sec_box = HBoxContainer.new()
 	sec_box.add_theme_constant_override("separation", 14)
 	hc.add_child(sec_box)
-	lbl_units = _label("Ordu: 0", 44, top, CYAN)
 	var hl := _label("A/D veya sürükle: nişan  •  Basılı tut: ateş", 34, hud, Color(1, 1, 1, 0.7))
 	hl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	hl.offset_top = -80
@@ -1193,6 +1477,49 @@ func _build_ui() -> void:
 	_btn("Menü", Color(0.3, 0.3, 0.5), rv, _show_menu)
 	result.visible = false
 	_refresh_menu()
+
+func _chip(parent: Node, col: Color, kind: String) -> Label:
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.1, 0.22, 0.72)
+	sb.set_corner_radius_all(40)
+	sb.border_color = col
+	sb.set_border_width_all(5)
+	sb.content_margin_left = 14; sb.content_margin_right = 26; sb.content_margin_top = 8; sb.content_margin_bottom = 8
+	pc.add_theme_stylebox_override("panel", sb)
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(pc)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 12)
+	pc.add_child(h)
+	var ic := Panel.new()
+	ic.custom_minimum_size = Vector2(62, 62)
+	var isb := StyleBoxFlat.new()
+	isb.bg_color = col
+	isb.set_corner_radius_all(31)
+	ic.add_theme_stylebox_override("panel", isb)
+	h.add_child(ic)
+	var dk := Color(0.1, 0.1, 0.2)
+	match kind:
+		"time":
+			var r1 := ColorRect.new(); r1.color = dk; r1.size = Vector2(6, 22); r1.position = Vector2(28, 12); ic.add_child(r1)
+			var r2 := ColorRect.new(); r2.color = dk; r2.size = Vector2(18, 6); r2.position = Vector2(28, 30); ic.add_child(r2)
+		"ammo":
+			var b := Panel.new(); var bsb := StyleBoxFlat.new(); bsb.bg_color = dk; bsb.set_corner_radius_all(14)
+			b.add_theme_stylebox_override("panel", bsb); b.size = Vector2(28, 28); b.position = Vector2(17, 17); ic.add_child(b)
+		"army":
+			var hd := Panel.new(); var hsb := StyleBoxFlat.new(); hsb.bg_color = dk; hsb.set_corner_radius_all(9)
+			hd.add_theme_stylebox_override("panel", hsb); hd.size = Vector2(18, 18); hd.position = Vector2(22, 10); ic.add_child(hd)
+			var bd := Panel.new(); var bdsb := StyleBoxFlat.new(); bdsb.bg_color = dk; bdsb.corner_radius_top_left = 12; bdsb.corner_radius_top_right = 12
+			bd.add_theme_stylebox_override("panel", bdsb); bd.size = Vector2(30, 20); bd.position = Vector2(16, 31); ic.add_child(bd)
+	var l := Label.new()
+	l.add_theme_font_size_override("font_size", 50)
+	l.add_theme_font_override("font", bold)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	l.add_theme_constant_override("outline_size", 10)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	h.add_child(l)
+	return l
 
 func _build_sec_bars(n: int) -> void:
 	for c in sec_box.get_children():
