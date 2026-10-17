@@ -23,13 +23,13 @@ var is_low := false
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 190, "time": 120.0, "sections": [
+	{"ammo": 200, "time": 120.0, "sections": [
 		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
-	{"ammo": 185, "time": 120.0, "sections": [
+	{"ammo": 190, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 650, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
-	{"ammo": 185, "time": 120.0, "sections": [
+		{"hp": 390, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
+	{"ammo": 195, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
@@ -142,6 +142,12 @@ var banner: Label = null
 var ammo_warn: Label = null
 var hud_crow: Control = null
 var ptr_down := false
+var g_down := false        # isaretci (fare/dokunma) su an basili mi
+var in_gate := false       # ekran degisti: eski basis birakilana kadar girdiyi yut
+var lose_streak := {}      # bolum -> ust uste yenilgi (oturum ici)
+var help_on := false
+var help_tag: Label = null
+var ammo_chip: Control = null
 var board_ref: Control = null
 var is_web := false
 var kalkan_told := false
@@ -274,6 +280,7 @@ func _ready() -> void:
 		buckets.append(PackedInt32Array())
 	var args := OS.get_cmdline_user_args()
 	test_run = args.size() > 0  # bench/autoplay/flowtest/*shot: asla skor gonderme
+	if args.size() == 0: _prewarm_ui()
 	if args.size() > 0 and args[0] == "bench":
 		bench = true
 		hint_seen = OS.get_environment("BENCH_HINT") != "1"
@@ -302,6 +309,15 @@ func _ready() -> void:
 		nickname = "aytekin"
 		_show_daily()
 		await get_tree().create_timer(4.0).timeout
+		get_viewport().get_texture().get_image().save_png(args[1])
+		get_tree().quit()
+	elif args.size() > 1 and args[0] == "settingsshot":
+		_enter_menu()
+		opt["shadows"] = false
+		_show_settings()
+		await get_tree().create_timer(1.5).timeout
+		var sb: Button = set_btns["shadows"]
+		print("SETTINGSSHOT text_w=%.0f btn_w=%.0f" % [sb.get_theme_font("font").get_string_size(sb.text, HORIZONTAL_ALIGNMENT_LEFT, -1, sb.get_theme_font_size("font_size")).x, sb.size.x])
 		get_viewport().get_texture().get_image().save_png(args[1])
 		get_tree().quit()
 	elif args.size() > 1 and args[0] == "menushot":
@@ -366,7 +382,11 @@ func _ready() -> void:
 		ammo = 30
 		_combo("HARİKA!")
 		await get_tree().create_timer(0.3).timeout
-		print("WARNSHOT warn_visible=%s" % ammo_warn.visible)
+		var rs := []
+		for k in 8:
+			await get_tree().create_timer(0.11).timeout
+			rs.append(snappedf((ammo_chip.get_theme_stylebox("panel") as StyleBoxFlat).bg_color.r, 0.01))
+		print("WARNSHOT warn_visible=%s chip_red_samples=%s" % [ammo_warn.visible, rs])
 		get_viewport().get_texture().get_image().save_png(args[1])
 		get_tree().quit()
 	elif args.size() > 0 and args[0] == "freshcheck":
@@ -428,6 +448,56 @@ func _ready() -> void:
 		await get_tree().create_timer(3.0).timeout
 		print("WINSHOT next_mid=%s next_end=%s double_mid=%s double_end=%s locked_mid=%s locked_end=%s" % [r0, btn_next.get_global_rect(), d0, btn_double.get_global_rect(), lk, btn_next.mouse_filter == Control.MOUSE_FILTER_IGNORE])
 		get_viewport().get_texture().get_image().save_png(args[2])
+		get_tree().quit()
+	elif args.size() > 0 and args[0] == "inputcheck":
+		# gecisi tetikleyen basis yeni ekrana tasinmamali; zafer butonu taze basis ister
+		hint_seen = true
+		start_level(0)
+		await get_tree().create_timer(0.6).timeout
+		_lose("test")
+		await get_tree().create_timer(0.8).timeout
+		var bm: Button = _find_btn(result, "Menü")
+		_tap(bm, true)                      # Menü'ye bas, basili tut
+		await get_tree().create_timer(0.9).timeout
+		var on_menu := menu.visible and not settingsp.visible and not mapp.visible
+		_tap(bm, false)                     # eski basis menude birakilir -> yutulmali
+		await get_tree().create_timer(0.3).timeout
+		var still_menu := menu.visible and not settingsp.visible and not mapp.visible
+		var pb: Button = _find_btn(menu, "OYNA")
+		_tap(pb, true); await get_tree().process_frame; _tap(pb, false)
+		await get_tree().create_timer(0.8).timeout
+		var map_ok := mapp.visible and not settingsp.visible
+		# zafer: kilit acilmadan baslayan basis sayilmaz
+		_fade(func() -> void: start_level(0))
+		await get_tree().create_timer(0.8).timeout
+		ammo = 60; time_left = 70.0
+		_win()
+		await get_tree().create_timer(1.1).timeout
+		var lv0 := level
+		_tap(btn_next, true)                # kilitliyken bas
+		await get_tree().create_timer(1.2).timeout
+		_tap(btn_next, false)               # kilit acildiktan sonra birak
+		await get_tree().create_timer(0.5).timeout
+		var stale_ignored := result.visible
+		_tap(btn_next, true); await get_tree().process_frame; _tap(btn_next, false)
+		await get_tree().create_timer(0.8).timeout
+		var fresh_ok := not result.visible
+		print("INPUTCHECK menu_after_hold=%s release_swallowed=%s first_oyna_opens_map=%s win_stale_press_ignored=%s win_fresh_press_works=%s lv=%d" % [on_menu, still_menu, map_ok, stale_ignored, fresh_ok, lv0])
+		get_tree().quit()
+	elif args.size() > 1 and args[0] == "helpcheck":
+		hint_seen = true
+		lose_streak[1] = 2
+		start_level(1)
+		await get_tree().create_timer(1.0).timeout
+		print("HELPCHECK help=%s start_ammo=%d ammo=%d tag=%s" % [help_on, start_ammo, ammo, help_tag.visible])
+		ammo = int(start_ammo * 0.2)
+		await get_tree().create_timer(0.6).timeout
+		get_viewport().get_texture().get_image().save_png(args[1])
+		_win()
+		await get_tree().create_timer(0.3).timeout
+		start_level(1)
+		await get_tree().create_timer(0.5).timeout
+		print("HELPCHECK after_win help=%s start_ammo=%d tag=%s" % [help_on, start_ammo, help_tag.visible])
 		get_tree().quit()
 	elif args.size() > 0 and args[0] == "autoplay":
 		_autoplay(int(args[1]) if args.size() > 1 else 0)
@@ -1161,6 +1231,7 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	for ln in lb.text.split("\n"): chars = maxi(chars, ln.length())
 	lb.font_size = clampi(int((w - 0.7) / (chars * 0.66 * 0.0105)), 40, 200)
 	if lb.text.contains("\n"): lb.font_size = mini(lb.font_size, 110)
+	if gd[3] == "kalkan": lb.font_size = maxi(lb.font_size, 60)  # dar kapida da okunsun
 	lb.pixel_size = 0.0105
 	lb.outline_size = int(lb.font_size * 0.25)
 	lb.font = bold
@@ -1291,6 +1362,10 @@ func _start(L: Dictionary, i: int) -> void:
 	settingsp.visible = false
 	Engine.time_scale = 1.0
 	start_ammo = maxi(1, int(L["ammo"]))
+	# dinamik yardim: ayni bolumde ust uste 2 yenilgiden sonra +%25 mermi (zaferde sifirlanir)
+	help_on = not menu_mode and not daily and int(lose_streak.get(i, 0)) >= 2
+	if help_on: start_ammo = int(round(start_ammo * 1.25))
+	if help_tag: help_tag.visible = help_on
 	is_replay = not menu_mode and not daily and int(stars_best.get(i, 0)) > 0
 	if menu_mode: biome = 0
 	elif daily: biome = absi(hash(daily_day)) % 3
@@ -1312,7 +1387,7 @@ func _start(L: Dictionary, i: int) -> void:
 			gates.append(_make_gate(gd, gd[0] + off, si, gi))
 			gi += 1
 		bases.append(_make_base(BASE_Z + off, si == secs.size() - 1))
-	ammo = L["ammo"]
+	ammo = start_ammo
 	time_left = L["time"]
 	kale_coins = 0
 	kill_acc = 0
@@ -1405,7 +1480,45 @@ func _kill_e(j: int) -> void:
 	ex.resize(l); ez.resize(l); ehp.resize(l); esc.resize(l)
 
 # ---------------- girdi ----------------
+func _prewarm_ui() -> void:
+	# ilk harita tiklamasinda ~1 sn siyah ekran: harita/ayarlar ilk kez ciziliyor (yazi tipi
+	# boyutlari, Line2D). Acilista neredeyse saydam olarak 3 kare cizdirip isit.
+	for p: Control in [mapp, settingsp]:
+		p.modulate.a = 0.02
+		p.visible = true
+	for k in 3: await get_tree().process_frame
+	for p: Control in [mapp, settingsp]:
+		p.visible = false
+		p.modulate.a = 1.0
+
+func _tap(c: Control, down: bool) -> void:
+	var mb := InputEventMouseButton.new()
+	mb.button_index = MOUSE_BUTTON_LEFT
+	mb.pressed = down
+	mb.button_mask = MOUSE_BUTTON_MASK_LEFT if down else 0
+	mb.position = get_viewport().get_final_transform() * c.get_global_rect().get_center()
+	mb.global_position = mb.position
+	Input.parse_input_event(mb)
+
+func _mark_screen() -> void:
+	# ekran degistiginde: hala basili olan (gecisi tetikleyen) basis yeni ekrana tasinmasin;
+	# birakilip yeniden basilana kadar girdi yok sayilir
+	in_gate = g_down
+
 func _input(e: InputEvent) -> void:
+	var is_btn: bool = e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT)
+	if is_btn:
+		if e.pressed:
+			g_down = true
+		else:
+			g_down = false
+			if in_gate:
+				in_gate = false
+				get_viewport().set_input_as_handled()
+				return
+	if in_gate and (is_btn or e is InputEventScreenDrag or e is InputEventMouseMotion):
+		get_viewport().set_input_as_handled()
+		return
 	if not playing: return
 	if e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
 		holding = e.pressed
@@ -1830,8 +1943,15 @@ func _sim(dt: float) -> void:
 	if ammo_warn:
 		var low := not menu_mode and not bench and ammo < start_ammo * 0.25
 		ammo_warn.visible = low
+		var pul := 0.5 + 0.5 * sin(t * 7.0)
 		if low:
-			ammo_warn.modulate.a = 0.65 + 0.35 * sin(t * 6.0)
+			ammo_warn.modulate.a = 0.7 + 0.3 * pul
+			ammo_warn.pivot_offset = ammo_warn.size * 0.5
+			ammo_warn.scale = Vector2.ONE * (1.0 + 0.05 * pul)
+		if ammo_chip:
+			var csb := ammo_chip.get_theme_stylebox("panel") as StyleBoxFlat
+			csb.bg_color = Color(0.08, 0.1, 0.22, 0.72).lerp(Color(0.9, 0.1, 0.1, 0.95), pul) if low else Color(0.08, 0.1, 0.22, 0.72)
+			ammo_chip.queue_redraw()
 	if ammo_pop and ammo_pop_t <= 0.0 and ammo_pop.modulate.a > 0.0:
 		ammo_pop.modulate.a = maxf(0.0, ammo_pop.modulate.a - dt * 4.0)
 	(sec_bars[sec] as ProgressBar).value = 100.0 - float(maxi(base_hp, 0)) / base_max * 100.0
@@ -2102,6 +2222,7 @@ func _win() -> void:
 		btn_next.text = "Sıralama"
 		_show_result()
 		return
+	lose_streak.erase(level)
 	var c_lvl := 40 + 30 * (level + 1)
 	var c_ammo := mini(ammo, 150)
 	var c_time := int(time_left)
@@ -2140,6 +2261,8 @@ func _win() -> void:
 
 func _lose(why: String) -> void:
 	sfx("lose", -2.0, 0.0, 0.0)
+	if not daily and not menu_mode and not revived:
+		lose_streak[level] = int(lose_streak.get(level, 0)) + 1
 	playing = false
 	holding = false
 	res_title.text = "YENİLDİN"
@@ -2154,6 +2277,7 @@ func _lose(why: String) -> void:
 	_show_result(0.3)
 
 func _show_result(lock := 0.5) -> void:
+	_mark_screen()
 	hud.visible = false
 	result.visible = true
 	result.modulate.a = 0.0
@@ -2168,6 +2292,7 @@ func _show_result(lock := 0.5) -> void:
 	tw.tween_interval(lock)
 	tw.tween_callback(func() -> void:
 		if my_id != res_lock_id: return
+		_mark_screen()  # kilit acilmadan once baslamis basis butona sayilmaz
 		for b: Button in res_btns:
 			b.mouse_filter = Control.MOUSE_FILTER_STOP
 			create_tween().tween_property(b, "modulate:a", 1.0, 0.12))
@@ -2298,6 +2423,7 @@ func _build_ui() -> void:
 	top.move_child(lbl_level, 0)
 	lbl_time = _chip(row, Color(1.0, 0.8, 0.2), "time")
 	lbl_ammo = _chip(row, Color(1.0, 0.5, 0.2), "ammo")
+	ammo_chip = lbl_ammo.get_parent().get_parent()
 	lbl_units = _chip(row, CYAN, "army")
 	var abc := CenterContainer.new()
 	abc.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2331,13 +2457,19 @@ func _build_ui() -> void:
 	ammo_pop.size = Vector2(260, 56)
 	ammo_pop.position = Vector2(810, 170)
 	ammo_pop.modulate.a = 0.0
-	ammo_warn = _label("Mermi azalıyor — kapılardan geç, düşman vur", 38, hud, Color(1.0, 0.6, 0.25))
+	help_tag = _label("Yardım: +%25 mermi", 34, hud, Color(0.55, 1.0, 0.6))
+	help_tag.add_theme_font_override("font", bold)
+	help_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	help_tag.position = Vector2(36, 395)
+	help_tag.size = Vector2(400, 50)
+	help_tag.visible = false
+	ammo_warn = _label("Mermi azalıyor — kapılardan geç, düşman vur", 43, hud, Color(1.0, 0.6, 0.25))
 	ammo_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ammo_warn.add_theme_constant_override("outline_size", 14)
 	ammo_warn.add_theme_font_override("font", bold)
 	ammo_warn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	ammo_warn.offset_top = -150
-	ammo_warn.offset_bottom = -90
+	ammo_warn.offset_top = -175
+	ammo_warn.offset_bottom = -95
 	ammo_warn.visible = false
 	banner = _label("", 64, hud, Color.WHITE)
 	banner.add_theme_font_override("font", bold)
@@ -3091,9 +3223,10 @@ func _fade(cb: Callable) -> void:
 	tw.tween_property(fader, "color:a", 1.0, 0.16)
 	tw.tween_callback(func() -> void:
 		cb.call()
+		_mark_screen()
+		await get_tree().process_frame
+		await get_tree().process_frame
 		fader.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		await get_tree().process_frame
-		await get_tree().process_frame
 		var tw2 := create_tween().set_ignore_time_scale(true)
 		tw2.tween_property(fader, "color:a", 0.0, 0.25))
 
@@ -3265,6 +3398,7 @@ func _build_settings(cl: Node) -> void:
 	for k in ["sfx", "music", "vib", "shadows"]:
 		set_btns[k] = _btn("", Color(0.2, 0.45, 0.8), v, _toggle_opt.bind(k))
 	_btn("Geri", Color(0.3, 0.3, 0.5), v, func() -> void:
+		_mark_screen()
 		settingsp.visible = false
 		menu.visible = true)
 	settingsp.visible = false
@@ -3281,11 +3415,13 @@ func _refresh_settings() -> void:
 		var b: Button = set_btns[k]
 		var on: bool = opt[k]
 		b.text = "%s: %s" % [names[k], "AÇIK" if on else "KAPALI"]
+		if k == "shadows": b.add_theme_font_size_override("font_size", 44)  # 720px butona sigsin
 		var c := Color(0.12, 0.65, 0.4) if on else Color(0.35, 0.35, 0.45)
 		b.add_theme_stylebox_override("normal", _style(c))
 		b.add_theme_stylebox_override("hover", _style(c.lightened(0.15)))
 
 func _show_settings() -> void:
+	_mark_screen()
 	menu.visible = false
 	settingsp.visible = true
 	_refresh_settings()
@@ -3419,8 +3555,14 @@ func _flowtest(shot: String) -> void:
 	get_tree().quit()
 
 
+# insan botu: [yeniden hedef min sn, max sn, x3 olasiligi, diger iyi kapi, yerinde kal, nisan hatasi, hiz]
+var HB := [1.5, 3.0, 0.25, 0.3, 0.25, 1.2, 3.0]
 func _autoplay(lv: int) -> void:
 	# AP_MODE: smart (varsayilan, eski bot) | casual (gecikmeli/yanilan oyuncu) | hold (ortada basili tut)
+	var hb := OS.get_environment("AP_HB")
+	if hb != "":
+		var parts := hb.split(",")
+		for k in mini(parts.size(), HB.size()): HB[k] = float(parts[k])
 	var mode := OS.get_environment("AP_MODE")
 	if mode == "": mode = "smart"
 	var ts := float(OS.get_environment("AP_TS")) if OS.get_environment("AP_TS") != "" else 2.0
@@ -3447,6 +3589,33 @@ func _autoplay(lv: int) -> void:
 		var gdt := get_process_delta_time() * ts
 		if mode == "hold":
 			cannon_x = 0.0
+		elif mode == "human":
+			# insan benzeri: seyrek ve gec seri degisimi, buyuk nisan hatasi, x3'u sik kacirir, hep basili
+			rt -= gdt
+			if rt <= 0.0:
+				rt = randf_range(HB[0], HB[1])
+				tgt_g = null
+				var r := randf()
+				var cands: Array = []
+				for g in gates:
+					if g["sec"] == sec and not String(g["op"]).begins_with("-") and g["op"] != "x3":
+						cands.append(g)
+				var g3 = null
+				for g in gates:
+					if g["sec"] == sec and g["op"] == "x3": g3 = g
+				if r < HB[2] and g3 != null:
+					tgt_g = g3
+				elif r < HB[2] + HB[3] and cands.size() > 0:
+					tgt_g = cands[randi() % cands.size()]
+				elif r < HB[2] + HB[3] + HB[4]:
+					tgt_x = cannon_x
+				else:
+					tgt_x = randf_range(-2.5, 2.5)
+				var err := randf_range(-HB[5], HB[5])
+				if tgt_g != null: tgt_x = err
+				else: tgt_x += err
+			var want2: float = (tgt_g["bx"] + tgt_x) if tgt_g != null else tgt_x
+			cannon_x = move_toward(cannon_x, clampf(want2, -LANE + 0.4, LANE - 0.4), HB[6] * gdt)
 		elif mode == "casual":
 			rt -= gdt
 			if rt <= 0.0:
@@ -3494,7 +3663,7 @@ func _autoplay(lv: int) -> void:
 			get_viewport().get_texture().get_image().save_png(dir + "rr8-ap-L%d-%d.png" % [lv + 1, shot_i])
 	var used: float = float(cur_L["time"]) - time_left
 	await _wait(1.3)
-	print("AUTOPLAY mode=%s level=%d result=%s used=%.1fs time_left=%.1f ammo=%d/%d sec=%d/%d base_hp=%d" % [mode, lv + 1, "WIN" if res_title.text == "ZAFER!" else "LOSE", used, time_left, ammo, start_ammo, sec + 1, bases.size(), maxi(base_hp, 0)])
+	print("AUTOPLAY mode=%s level=%d result=%s used=%.1fs time_left=%.1f ammo=%d/%d sec=%d/%d base_hp=%d boss_pct=%d" % [mode, lv + 1, "WIN" if res_title.text == "ZAFER!" else "LOSE", used, time_left, ammo, start_ammo, sec + 1, bases.size(), maxi(base_hp, 0), int(100.0 * maxi(base_hp, 0) / maxi(base_max, 1))])
 	if shots:
 		await _wait(1.7)
 		get_viewport().get_texture().get_image().save_png(dir + "rr8-ap-L%d-result.png" % (lv + 1))
