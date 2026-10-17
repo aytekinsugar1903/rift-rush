@@ -28,8 +28,8 @@ const LEVELS := [
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
 	{"ammo": 170, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 540, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
-	{"ammo": 100, "time": 120.0, "sections": [
+		{"hp": 535, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -2.3, 3.6, "x2", 0.0], [-27.0, 2.3, 3.6, "kalkan", 0.0]]}]},
+	{"ammo": 192, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 480, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
@@ -3143,18 +3143,18 @@ func _anim_win(st: int) -> float:
 	var tw := create_tween()
 	for k in st:
 		var p: Polygon2D = res_stars[k]
-		tw.tween_interval(0.25)
+		tw.tween_interval(0.1)
 		tw.tween_callback(func() -> void:
 			p.color = Color(1.0, 0.82, 0.15)
 			p.scale = Vector2.ONE * 1.6
 			sfx("star", -6.0, 0.0, 0.1)
 			_vib(25))
-		tw.tween_property(p, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
+		tw.tween_property(p, "scale", Vector2.ONE, 0.08).set_trans(Tween.TRANS_BACK)
 	var e := earned + kale_coins
 	var base := coins - e
 	var wl := win_lines
-	tw.tween_method(func(v: float) -> void: res_info.text = "%s = +%d coin\nToplam: %d" % [wl, int(v), base + int(v)], 0.0, float(e), 1.0)
-	return st * 0.45 + 1.0
+	tw.tween_method(func(v: float) -> void: res_info.text = "%s = +%d coin\nToplam: %d" % [wl, int(v), base + int(v)], 0.0, float(e), 0.25)
+	return st * 0.18 + 0.25
 
 func _ok(name: String, cond: bool) -> void:
 	ft_res.append([name, cond])
@@ -3267,6 +3267,9 @@ func _autoplay(lv: int) -> void:
 	hint_seen = lv > 0
 	rate_lv = 0; card_lv = [0, 0, 0, 0]
 	owned = [true, true, false, false]; slots = [0, 0, 1] if lv >= 2 else [0, 0, 0]
+	if OS.get_environment("AP_LOADOUT") == "start":
+		owned = [true, false, false, false]; slots = [0, 0, 0]
+		rate_lv = lv  # yeni oyuncu: her bolumden sonra 1 atis hizi yukseltmesi
 	var dir := "/workspace/riftrush-review/"
 	start_level(lv)
 	Engine.time_scale = ts
