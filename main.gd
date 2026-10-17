@@ -29,7 +29,7 @@ const LEVELS := [
 	{"ammo": 200, "time": 120.0, "sections": [
 		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
 		{"hp": 340, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
-	{"ammo": 186, "time": 120.0, "sections": [
+	{"ammo": 205, "time": 120.0, "sections": [
 		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
 		{"hp": 450, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
@@ -143,6 +143,7 @@ var banner: Label = null
 var ammo_warn: Label = null
 var hud_crow: Control = null
 var ptr_down := false
+var hint_lbl: Label = null
 var ptr_pos := Vector2.ZERO   # basili parmak/fare konumu (bas-tut ile nisan)
 var g_down := false        # isaretci (fare/dokunma) su an basili mi
 var in_gate := false
@@ -579,7 +580,7 @@ func _ready() -> void:
 		var bm: Button = _find_btn(result, "Menü")
 		_tap(bm, true)                      # Menü'ye bas, basili tut
 		await get_tree().create_timer(0.9).timeout
-		var on_menu := result.visible       # v8.5: sonuc butonu birakinca tetiklenir; basili iken hicbir sey olmaz
+		var on_menu := not result.visible   # v8.9: buton basildigi anda tetiklenir (birakma beklenmez)
 		_tap(bm, false)                     # ayni butonda birak -> menuye gider
 		await get_tree().create_timer(0.9).timeout
 		var still_menu := menu.visible and not settingsp.visible and not mapp.visible
@@ -602,7 +603,7 @@ func _ready() -> void:
 		_tap(btn_next, true); await get_tree().process_frame; _tap(btn_next, false)
 		await get_tree().create_timer(0.8).timeout
 		var fresh_ok := not result.visible
-		print("INPUTCHECK held_no_action=%s release_on_menu_goes_menu=%s first_oyna_opens_map=%s win_stale_press_ignored=%s win_fresh_press_works=%s lv=%d" % [on_menu, still_menu, map_ok, stale_ignored, fresh_ok, lv0])
+		print("INPUTCHECK press_acts_immediately=%s release_on_menu_goes_menu=%s first_oyna_opens_map=%s win_stale_press_ignored=%s win_fresh_press_works=%s lv=%d" % [on_menu, still_menu, map_ok, stale_ignored, fresh_ok, lv0])
 		get_tree().quit()
 	elif args.size() > 0 and args[0] == "holdsteer":
 		# bas-tut ile nisan: isaretci hareket etmeden top isaretcinin x'ine gider (fare ve dokunma)
@@ -1394,12 +1395,12 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	var pmat := _mat(col.lightened(0.15), 0.35, 1.0, 0.0, 0.25)
 	_box(Vector3(w - 0.4, 2.9, 0.12), Vector3(0, 1.5, 0), pmat, n, false)
 	var lb := Label3D.new()
-	lb.text = {"okcu": "OKÇU", "dev": "DEV\n10:1", "kalkan": "KALKAN\n+1 can"}.get(gd[3], String(gd[3]).replace("x", "×"))
+	lb.text = {"okcu": "OKÇU", "dev": "DEV\n10:1", "kalkan": "KALKAN\n+1 CAN"}.get(gd[3], String(gd[3]).replace("x", "×"))
 	var chars := 1
 	for ln in lb.text.split("\n"): chars = maxi(chars, ln.length())
 	lb.font_size = clampi(int((w - 0.7) / (chars * 0.66 * 0.0105)), 40, 200)
 	if lb.text.contains("\n"): lb.font_size = mini(lb.font_size, 110)
-	if gd[3] == "kalkan": lb.font_size = maxi(lb.font_size, 60)  # dar kapida da okunsun
+	# v8.9: yazi her zaman kapi genisligine sigar (komsu kapiya tasmaz)
 	lb.pixel_size = 0.0105
 	lb.outline_size = int(lb.font_size * 0.25)
 	lb.font = bold
@@ -1419,9 +1420,9 @@ func _make_gate(gd: Array, z_world: float, si: int, gi: int) -> Dictionary:
 	cl.no_depth_test = true
 	cl.position = Vector3(0, 4.3 + (1.3 if (gi % 2 == 1 and w < 5.0) else 0.0), 0)
 	if gd[3] in ["okcu", "kalkan", "dev"]:
-		cl.font_size = 56
-		cl.outline_size = 24
-		cl.position.y = 3.9
+		cl.font_size = 48
+		cl.outline_size = 20
+		cl.position.y = 3.9 + (1.1 if (gi % 2 == 1 and w < 5.0) else 0.0)  # yan yana sayaclar ust uste binmesin
 	n.add_child(cl)
 	return {"cl": cl, "tot": 0, "ct": 9.0, "cnt": 0, "z": gd[0], "bx": gd[1], "cx": gd[1], "w": w, "op": gd[3], "amp": gd[4], "sec": si, "gi": gi,
 		"charge": charge, "node": n, "pend": 0, "col": col, "ph": randf() * 6.0, "pmat": pmat}
@@ -1591,7 +1592,7 @@ func _start(L: Dictionary, i: int) -> void:
 	cannon.position = Vector3(0, 0, 1.8)
 	var land0 := get_window().size.x > get_window().size.y
 	cam.position = Vector3(0, 13.0 if land0 else 15.0, 1.8 + (11.5 if land0 else 13.0))
-	cam.look_at(Vector3(0.0, 0, cam.position.z - (29.0 if land0 else 21.0)))
+	cam.look_at(Vector3(0.0, 0, cam.position.z - (25.0 if land0 else 18.5)))
 	cam_push = 0.0
 	if not hint_seen and not menu_mode and not daily and i == 0:
 		hint.visible = true
@@ -1729,6 +1730,15 @@ func _input(e: InputEvent) -> void:
 	if in_gate and (is_btn or e is InputEventScreenDrag or e is InputEventMouseMotion):
 		get_viewport().set_input_as_handled()
 		return
+	if is_btn and e.pressed and ui_layer:
+		if fader and fader.mouse_filter == Control.MOUSE_FILTER_STOP:
+			get_viewport().set_input_as_handled()   # yukleniyor karti: eski ekrana tik gitmesin
+			return
+		var hb := _ui_button_at(e.position)
+		if hb:
+			get_viewport().set_input_as_handled()
+			_press_btn(hb)
+			return
 	if not playing: return
 	if e is InputEventScreenTouch or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
 		holding = e.pressed
@@ -1834,7 +1844,7 @@ func _process(dt: float) -> void:
 	var target := Vector3(0.0, 13.0 if land else 15.0, cz + (11.5 if land else 13.0) - cam_push)
 	cam.position = cam.position.lerp(target, minf(1.0, dt * 4.0))
 	var sh := trauma * trauma * 0.18
-	cam.look_at(Vector3(0.0, 0, cam.position.z - (29.0 if land else 21.0)) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
+	cam.look_at(Vector3(0.0, 0, cam.position.z - (25.0 if land else 18.5)) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
 	if menu_mode:
 		var ang := t * 0.12
 		cam.position = Vector3(sin(ang) * 20.0, 10.0, -18.0 + cos(ang) * 20.0)
@@ -2173,6 +2183,7 @@ func _sim(dt: float) -> void:
 	if ammo_warn:
 		var low := not menu_mode and not bench and ammo < start_ammo * 0.25
 		ammo_warn.visible = low
+		if hint_lbl: hint_lbl.visible = not low
 		var pul := 0.5 + 0.5 * sin(t * 7.0)
 		if low:
 			ammo_warn.modulate.a = 0.7 + 0.3 * pul
@@ -2605,7 +2616,27 @@ func _btn(txt: String, c: Color, parent: Node, cb: Callable) -> Button:
 	b.pressed.connect(func() -> void: sfx("click", -6.0, 0.03, 0.05))
 	b.pressed.connect(cb)
 	parent.add_child(b)
+	ui_btns.append(b)
 	return b
+
+# v8.9: butonlar Godot GUI'nin hover/odak durumuna bagli kalmadan, basildigi anda tetiklenir.
+# Tiklama konumu burada dogrudan test edilir (onceden fare hareketi gelmese bile ilk tik calisir).
+var ui_btns: Array = []
+func _ui_button_at(pos: Vector2) -> Button:
+	var hit: Button = null
+	ui_btns = ui_btns.filter(func(x) -> bool: return is_instance_valid(x))
+	for b: Button in ui_btns:
+		if b.disabled or b.mouse_filter == Control.MOUSE_FILTER_IGNORE: continue
+		if not b.is_visible_in_tree(): continue
+		if b.get_global_rect().has_point(pos): hit = b
+	return hit
+
+func _press_btn(b: Button) -> void:
+	b.pivot_offset = b.size * 0.5
+	var tw := b.create_tween().set_ignore_time_scale(true)
+	tw.tween_property(b, "scale", Vector2.ONE * 0.94, 0.05)
+	tw.tween_property(b, "scale", Vector2.ONE, 0.08)
+	b.pressed.emit()
 
 func _label(txt: String, size: int, parent: Node, c := Color.WHITE) -> Label:
 	var l := Label.new()
@@ -2722,8 +2753,10 @@ func _build_ui() -> void:
 	ammo_warn.add_theme_constant_override("outline_size", 14)
 	ammo_warn.add_theme_font_override("font", bold)
 	ammo_warn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	ammo_warn.offset_top = -265
-	ammo_warn.offset_bottom = -175
+	ammo_warn.offset_top = -160   # v8.9: ipucunun yerinde gorunur, ipucu o sirada gizlenir (ust uste binmez)
+	ammo_warn.offset_bottom = -24
+	ammo_warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ammo_warn.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	ammo_warn.visible = false
 	banner = _label("", 64, hud, Color.WHITE)
 	banner.add_theme_font_override("font", bold)
@@ -2731,7 +2764,8 @@ func _build_ui() -> void:
 	banner.add_theme_constant_override("outline_size", 18)
 	banner.visible = false
 	# v8.6: dar dikey ekranda okunur: buyuk, tam opak beyaz, kalin kontur, gerekirse 2 satir
-	var hl := _label("Sürükle: nişan · Basılı tut: ateş · Düşman öldür: +mermi", 46, hud, Color(1, 1, 1))
+	var hl := _label("Basılı tut: nişan + ateş · Düşman öldür: +mermi", 46, hud, Color(1, 1, 1))
+	hint_lbl = hl
 	hl.add_theme_font_override("font", bold)
 	hl.add_theme_constant_override("outline_size", 14)
 	hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2772,6 +2806,9 @@ func _build_ui() -> void:
 	menu = mv.get_parent().get_parent()
 	(menu.get_child(0) as ColorRect).color = Color(0.03, 0.02, 0.1, 0.15)
 	_build_logo(mv)
+	var lgap := Control.new()   # v8.9: alt yazi RUSH logosunun altina binmesin
+	lgap.custom_minimum_size = Vector2(0, 40)
+	mv.add_child(lgap)
 	_label("Ordunu kur, yarığı kapat!", 46, mv, Color(1, 0.95, 0.8))
 	lbl_coins = _label("", 60, mv, Color(1, 0.85, 0.2))
 	var gap := Control.new()
@@ -2807,13 +2844,16 @@ func _build_ui() -> void:
 		stars_box.add_child(sc)
 		var sp := _star(sc, 80, Color(0.3, 0.27, 0.4), Vector2(95, 100 - (16 if k == 1 else 0)))
 		res_stars.append(sp)
-	res_info = _label("", 50, rv, Color(1, 0.92, 0.45))
+	res_info = _label("", 46, rv, Color(1, 0.92, 0.45))
 	res_info.add_theme_font_override("font", bold)
 	res_info.add_theme_constant_override("outline_size", 14)
 	res_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# metin alani bastan ayrilir: yazi animasyonu sirasinda butonlar kaymaz
-	res_info.custom_minimum_size = Vector2(860, 500)
+	res_info.custom_minimum_size = Vector2(1000, 500)
 	res_info.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	var rgap := Control.new()   # v8.9: coin dokumu Sonraki butonuna yapismasin
+	rgap.custom_minimum_size = Vector2(0, 24)
+	rv.add_child(rgap)
 	btn_next = _btn("Sonraki", Color(0.1, 0.7, 0.45), rv, _on_next)
 	btn_double = _btn("2× Coin  (Reklam izle)", Color(0.95, 0.6, 0.1), rv, _on_double)
 	btn_revive = _btn("Devam et +50 mermi (Reklam)", Color(0.85, 0.3, 0.6), rv, _on_revive)
@@ -3985,11 +4025,15 @@ func _cc_move(pos: Vector2) -> void:
 	mm.global_position = pos
 	Input.parse_input_event(mm)
 
+var cc_pat := 0   # 0: hareket + 1 kare sonra bas | 1: isinlan + ayni karede bas (xdotool) | 2: hareketsiz bas (CDP mousePressed)
 func _cc_click(b: Control, delay: float) -> void:
 	await get_tree().create_timer(delay, true, false, true).timeout
 	var pos := get_viewport().get_final_transform() * b.get_global_rect().get_center()
-	_cc_move(pos)
-	await get_tree().process_frame
+	if cc_pat == 0:
+		_cc_move(pos)
+		await get_tree().process_frame
+	elif cc_pat == 1:
+		_cc_move(pos)
 	_cc_mouse(pos, true)
 	await get_tree().create_timer(0.08, true, false, true).timeout
 	_cc_mouse(pos, false)
@@ -4026,15 +4070,17 @@ func _clickcheck() -> void:
 	await _cc_click(_find_btn(menu, "OYNA"), 0.0)
 	res.append(["Menü->yukleniyor karti biter bitmez OYNA", mapp.visible])
 	mapp.visible = false
-	for d in [0.05, 0.2, 0.5, 1.0]:
+	for combo in [[0, 0.05], [0, 0.5], [1, 0.05], [1, 0.5], [2, 0.05], [2, 0.5]]:
+		cc_pat = combo[0]
+		var d: float = combo[1]
 		_enter_menu()
 		await get_tree().create_timer(0.6).timeout
 		await _cc_click(_find_btn(menu, "OYNA"), d)
-		res.append(["d=%.2f menu->OYNA->harita" % d, mapp.visible])
+		res.append(["p%d d=%.2f menu->OYNA->harita" % [cc_pat, d], mapp.visible])
 		await _cc_click(_cc_map_node(0), d)
-		res.append(["d=%.2f harita->1->ordu" % d, loadout.visible])
+		res.append(["p%d d=%.2f harita->1->ordu" % [cc_pat, d], loadout.visible])
 		await _cc_click(_find_btn(loadout, "SAVAŞA BAŞLA"), d)
-		res.append(["d=%.2f ordu->SAVAŞA BAŞLA->oyun" % d, playing and not menu_mode])
+		res.append(["p%d d=%.2f ordu->SAVAŞA BAŞLA->oyun" % [cc_pat, d], playing and not menu_mode])
 		# oyunda basili tut, basiliyken yenil, sonra birak: hicbir sey tetiklenmemeli
 		await get_tree().create_timer(0.3).timeout
 		_cc_mouse(center, true)
@@ -4046,9 +4092,9 @@ func _clickcheck() -> void:
 		_cc_move(hold_pos)
 		_cc_mouse(hold_pos, false)   # tutmanin birakilmasi Tekrar Dene ustunde
 		await get_tree().create_timer(0.5).timeout
-		res.append(["d=%.2f yenilgi: oyun tutmasini birakmak tetiklemedi" % d, result.visible])
+		res.append(["p%d d=%.2f yenilgi: oyun tutmasini birakmak tetiklemedi" % [cc_pat, d], result.visible])
 		await _cc_click(btn_next, d)
-		res.append(["d=%.2f yenilgi->Tekrar Dene->oyun" % d, playing and not result.visible])
+		res.append(["p%d d=%.2f yenilgi->Tekrar Dene->oyun" % [cc_pat, d], playing and not result.visible])
 		# zafer: basiliyken kazan, birak (tetiklememeli), sonra Sonraki
 		_cc_mouse(center, true)
 		await get_tree().create_timer(0.3).timeout
@@ -4059,17 +4105,17 @@ func _clickcheck() -> void:
 		_cc_move(hold_pos)
 		_cc_mouse(hold_pos, false)
 		await get_tree().create_timer(0.5).timeout
-		res.append(["d=%.2f zafer: oyun tutmasini birakmak tetiklemedi" % d, result.visible])
+		res.append(["p%d d=%.2f zafer: oyun tutmasini birakmak tetiklemedi" % [cc_pat, d], result.visible])
 		await _cc_click(btn_next, d)
-		res.append(["d=%.2f zafer->Sonraki->ordu" % d, loadout.visible and not result.visible])
+		res.append(["p%d d=%.2f zafer->Sonraki->ordu" % [cc_pat, d], loadout.visible and not result.visible])
 		# ordu -> Geri -> harita -> oyun -> yenilgi -> Menu -> OYNA
 		await _cc_click(_find_btn(loadout, "SAVAŞA BAŞLA"), d)
 		await get_tree().create_timer(0.3).timeout
 		_lose("test")
 		await _cc_click(_find_btn(result, "Menü"), d + 0.3)
-		res.append(["d=%.2f yenilgi->Menü->menu" % d, menu.visible and not result.visible])
+		res.append(["p%d d=%.2f yenilgi->Menü->menu" % [cc_pat, d], menu.visible and not result.visible])
 		await _cc_click(_find_btn(menu, "OYNA"), d)
-		res.append(["d=%.2f menu(yenilgiden)->OYNA->harita" % d, mapp.visible])
+		res.append(["p%d d=%.2f menu(yenilgiden)->OYNA->harita" % [cc_pat, d], mapp.visible])
 		mapp.visible = false
 	var fails := 0
 	for r in res:
