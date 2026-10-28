@@ -27,11 +27,11 @@ const LEVELS := [
 		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
 		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
 	{"ammo": 200, "time": 120.0, "sections": [
-		{"hp": 200, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 340, "spawn": 1.5, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
+		{"hp": 220, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
+		{"hp": 372, "spawn": 1.45, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
 	{"ammo": 205, "time": 120.0, "sections": [
-		{"hp": 220, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
-		{"hp": 450, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.2, 4.0, "kalkan", 0.0], [-17.0, 2.2, 4.0, "x2", 0.0], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "-5", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]}]},
+		{"hp": 250, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
+		{"hp": 375, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.4, 3.2, "kalkan", 0.0], [-17.0, 2.4, 3.2, "x2", 0.0], [-26.0, 0.0, 3.2, "dev", 1.8]]}]},
 	{"ammo": 110, "time": 130.0, "sections": [
 		{"hp": 260, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "okcu", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
 		{"hp": 450, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.6], [-27.0, -2.2, 4.0, "dev", 0.0], [-27.0, 2.2, 4.0, "x2", 0.0]]},
@@ -2480,9 +2480,9 @@ func _win() -> void:
 		earned = full
 	coins += earned
 	hint_seen = true
-	win_lines = "1. yıldız: Kale yıkıldı\n2. yıldız: %d+ sn kalsın (%d) %s\n3. yıldız: %d+ mermi kalsın (%d) %s\nBölüm %d + Mermi %d + Süre %d + Kaleler %d" % [int(tmax * 0.3), c_time, "OK" if s_time else "X", int(start_ammo * 0.25), ammo, "OK" if s_ammo else "X", c_lvl, c_ammo, c_time, kale_coins]
+	win_lines = "1. yıldız: Kale yıkıldı\n2. yıldız: %d+ sn kalsın (%d) %s\n3. yıldız: %d+ mermi kalsın (%d) %s\nBölüm %d + Mermi %d + Süre %d + Kale %d" % [int(tmax * 0.3), c_time, "OK" if s_time else "X", int(start_ammo * 0.25), ammo, "OK" if s_ammo else "X", c_lvl, c_ammo, c_time, kale_coins]
 	if is_replay:
-		win_lines = win_lines.replace("\nBölüm %d +" % c_lvl, "\nTekrar: %%30 (yeni yıldız %d) · Bölüm %d +" % [new_st, c_lvl])
+		win_lines = win_lines.replace("\nBölüm %d +" % c_lvl, "\nTekrar: %%30 (yeni yıldız %d)\nBölüm %d +" % [new_st, c_lvl])
 	stars_best[level] = maxi(int(stars_best.get(level, 0)), st)
 	doubled = false
 	levels_since_ad += 1
@@ -2677,6 +2677,9 @@ func _fit_panels() -> void:
 		var need: float = (pf[2] as Control).get_combined_minimum_size().y + 200.0
 		var sc := minf(1.0, vh / maxf(need, 1.0))
 		cc.pivot_offset = cc.size * 0.5
+		if sc < 0.999:
+			# v9.0: icerik ekrandan uzunsa (yatay) kap ekrandan tasar; pivotu, icerigin ortasi ekran ortasina gelecek sekilde sec (alt rozet kesilmez)
+			cc.pivot_offset.y = (vh * 0.5 - cc.size.y * 0.5 * sc) / (1.0 - sc)
 		cc.scale = Vector2.ONE * sc
 
 func _build_ui() -> void:
@@ -3781,7 +3784,7 @@ func _anim_win(st: int) -> float:
 	var e := earned + kale_coins
 	var base := coins - e
 	var wl := win_lines
-	tw.tween_method(func(v: float) -> void: res_info.text = "%s = +%d coin\nToplam: %d" % [wl, int(v), base + int(v)], 0.0, float(e), 0.25)
+	tw.tween_method(func(v: float) -> void: res_info.text = "%s\nKazanç: +%d coin · Toplam: %d" % [wl, int(v), base + int(v)], 0.0, float(e), 0.25)
 	return st * 0.18 + 0.25
 
 func _ok(name: String, cond: bool) -> void:
