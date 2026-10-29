@@ -1,6 +1,6 @@
 # Rift Rush (MVP)
 
-Godot 4.7.1, portrait 1080x1920. Web demo: https://riftrush-demo.aytekinsugar1903.workers.dev
+Godot 4.7.1, v0.9.1 (versionCode 19), portrait 1080x1920. Web demo: https://riftrush-demo.aytekinsugar1903.workers.dev
 
 - Web: godot --headless --export-release Web build/web/index.html, sonra deploy/ (wasm gzip + worker)
 - APK: --export-debug Android build/riftrush-debug.apk
