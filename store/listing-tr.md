@@ -13,4 +13,4 @@ Yeşil kapılar kalabalığı katlar. Kırmızı kapılar azaltır. Askerlerini 
 
 Günlük meydan okumada herkes aynı yarığı oynar. Kaleyi ne kadar az atışla yıkarsan o kadar iyi. En az iki karakterlik bir takma ad seçersen bu ad ve atış sayın günlük sıralamada görünebilir. Daha kısa adlar cihazda kalır. Bölümlerin geri kalanı çevrimdışı oynanır.
 
-Zorunlu reklam yok. Uygulama içi satın alma yok.
+Ödüllü reklam yalnızca ekstra coin veya mermi için düğmeye basınca oynar. İlerleyen bölümler arasında kısa bir reklam çıkabilir; oyun sırasında ve ilk üç bölümde çıkmaz. Ayarlardan reklam iznini kapatabilirsin. Uygulama içi satın alma yok.

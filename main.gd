@@ -2602,10 +2602,20 @@ func _on_double() -> void:
 			res_info.text = "+%d coin (2×)   (Toplam: %d)" % [earned * 2, coins]
 			btn_double.visible = false)
 
+const INTERSTITIAL_GAP_MS := 180000
+var last_interstitial_ms := 0
+
 func _maybe_interstitial(then: Callable) -> void:
-	# adil reklam: ilk 3 bolumde asla, sonra en fazla 3 bolumde bir
-	if level >= 3 and levels_since_ad >= 3:
+	# Between levels only: never while a run is in progress, never in levels 1-3,
+	# then at most once every 3 wins and not twice inside three minutes.
+	if playing:
+		then.call()
+		return
+	var due := level >= 3 and levels_since_ad >= 3
+	var gap_ok := last_interstitial_ms == 0 or Time.get_ticks_msec() - last_interstitial_ms >= INTERSTITIAL_GAP_MS
+	if due and gap_ok:
 		levels_since_ad = 0
+		last_interstitial_ms = Time.get_ticks_msec()
 		_save()
 		Ads.show_interstitial(then)
 	else:
@@ -3922,6 +3932,7 @@ func _build_settings(cl: Node) -> void:
 	_label("AYARLAR", 100, v, CYAN)
 	for k in ["sfx", "music", "vib", "shadows"]:
 		set_btns[k] = _btn("", Color(0.2, 0.45, 0.8), v, _toggle_opt.bind(k))
+	set_btns["ads"] = _btn("Reklam izni", Color(0.45, 0.35, 0.15), v, func() -> void: Ads.open_consent())
 	_btn("Geri", Color(0.3, 0.3, 0.5), v, func() -> void:
 		_mark_screen()
 		settingsp.visible = false
@@ -3938,6 +3949,12 @@ func _refresh_settings() -> void:
 	var names := {"sfx": "Ses efektleri", "music": "Müzik", "vib": "Titreşim", "shadows": "Gölge & yüksek kalite"}
 	for k in set_btns:
 		var b: Button = set_btns[k]
+		if k == "ads":
+			b.text = Ads.consent_label()
+			_fit_btn_font(b, 44, 30)
+			b.add_theme_stylebox_override("normal", _style(Color(0.45, 0.35, 0.15)))
+			b.add_theme_stylebox_override("hover", _style(Color(0.55, 0.42, 0.18)))
+			continue
 		var on: bool = opt[k]
 		b.text = "%s: %s" % [names[k], "AÇIK" if on else "KAPALI"]
 		if k == "shadows": b.text = "Gölge: %s" % ("AÇIK" if on else "KAPALI")

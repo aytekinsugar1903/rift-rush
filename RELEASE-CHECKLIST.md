@@ -91,15 +91,19 @@ Fill the IARC questionnaire from `store/content-rating.md`. Cartoon fantasy viol
 
 ## 8. Other policy forms
 
-- Ads declaration: No.
+- Ads declaration: **Yes**. Rewarded ads are opt-in. Interstitials are between levels only (see `store/data-safety.md`). The Android build uses Google's test ad ids from `ads_config.gd` until you paste the real app id and two ad unit ids there and rebuild. Do not ship test ids to production.
 - Target audience: not children. 13+ is the honest fit while nicknames are public.
 - News: No. COVID-19: No. Government: No.
 - Data deletion URL: the hosted privacy policy, once the email works.
 - Advertising ID: the app does not use it.
 
-## 9. Decide before review
+## 9. Ads before review
 
-The victory and defeat screens still show reward buttons labeled as watching an ad. `ads.gd` grants the reward locally and does not load an ad. Either leave the Data safety answer as “no ads” and be ready to explain that, or rename those buttons before you ship. Do not integrate an ad network without updating `store/privacy-policy.md`, `store/data-safety.md`, and `store/content-rating.md`.
+`ads_config.gd` is the only id source. It currently holds Google's official test ids because the AdMob account is pending. Create the app and two units (rewarded, interstitial) in AdMob, put those three ids in that file, rebuild the AAB, and create the UMP GDPR message (and a KVKK / Turkey message if AdMob offers it) before production. Until then, test ads are what the release build requests.
+
+In the EEA, UMP shows Google's form before ads load. Elsewhere, including Turkey, the game asks a local allow / not-now question (Settings can change it). Refusing ads, or a failed load, must leave the level playable: rewarded buttons grant nothing, and the next level still opens.
+
+Do not add another ad network without editing the privacy policy and the Data safety draft again.
 
 The daily API has no delete endpoint. Deletion is a manual SQL change when someone emails you.
 

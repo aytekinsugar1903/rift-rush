@@ -34,11 +34,15 @@ The server also stores a daily rate-limit counter under a key that is the first 
 
 The app does not send your score when the nickname is shorter than two characters, and test runs inside the development build do not send scores.
 
-### What this version does not do
+### Ads
 
-This build does not include an advertising SDK, does not read the advertising ID, and does not offer in-app purchases. Buttons labeled as watching an ad grant the reward on the device; they do not contact an ad network. If a later version adds a real ad network, this policy and the Play Data safety form must be updated before that version ships.
+The Android release uses Google AdMob. Rewarded ads play only after you tap for extra coins or ammo. A full-screen ad may play between later levels (not during a run, not in the first three levels, and not more than once every three minutes). You can refuse ads in Settings. If an ad does not load, the level continues and a refused or failed rewarded ad does not grant the bonus.
 
-There is no account system, no precise location, no contacts, photos, or microphone access. The release app requests Internet (for the daily board) and vibration (if you leave vibration on).
+Before ads load, the app asks Google's User Messaging Platform (UMP) for a GDPR consent decision. If UMP does not require a form, the app asks a local question for KVKK / GDPR. The choice is stored on the device (`ads_consent.cfg`). AdMob, when ads are allowed, can read the advertising ID and related device data as described in Google's AdMob policy. The ids in this build are Google's official test ids until `ads_config.gd` is switched to the real AdMob ids.
+
+There are no in-app purchases.
+
+There is no account system, no precise location collected by Rift Rush itself, no contacts, photos, or microphone access. The release app requests Internet (daily board and ads) and vibration (if you leave vibration on).
 
 ### Children
 
@@ -78,11 +82,15 @@ Sunucu ayrıca bağlantı IP adresinin, günün ve sabit bir son ekin SHA-256 ö
 
 Takma ad iki karakterden kısaysa skor gönderilmez. Geliştirme içindeki test koşuları da skor göndermez.
 
-### Bu sürümün yapmadıkları
+### Reklamlar
 
-Bu sürümde reklam SDK'sı yoktur, reklam kimliği okunmaz ve uygulama içi satın alma yoktur. Reklam izle diye etiketlenmiş düğmeler ödülü cihazda verir; bir reklam ağına bağlanmaz. İleride gerçek bir reklam ağı eklenirse bu metin ve Play Veri güvenliği formu, o sürüm çıkmadan güncellenmelidir.
+Android yayını Google AdMob kullanır. Ödüllü reklam yalnızca ekstra coin veya mermi için düğmeye basınca oynar. Tam ekran reklam, ilerleyen bölümler arasında çıkabilir (oyun sırasında değil, ilk üç bölümde değil ve üç dakikada birden sık değil). Ayarlardan reklam iznini kapatabilirsin. Reklam yüklenmezse bölüm devam eder; reddedilen veya açılmayan ödüllü reklam bonus vermez.
 
-Hesap sistemi, kesin konum, kişiler, fotoğraf veya mikrofon yoktur. Yayın uygulaması İnternet (günlük sıralama) ve titreşim (ayarı açıksa) iznini ister.
+Reklamlar yüklenmeden önce uygulama, GDPR kararı için Google User Messaging Platform (UMP) sorar. UMP form istemezse uygulama KVKK / GDPR için yerel bir soru sorar. Seçim cihazda durur (`ads_consent.cfg`). Reklamlara izin verilince AdMob, Google'ın AdMob politikasında yazıldığı gibi reklam kimliğini ve ilgili cihaz verisini okuyabilir. AdMob hesabı onaylanana kadar `ads_config.gd` içindeki kimlikler Google'ın resmi test kimlikleridir.
+
+Uygulama içi satın alma yoktur.
+
+Hesap sistemi yoktur. Rift Rush kendisi kesin konum, kişi, fotoğraf veya mikrofon toplamaz. Yayın uygulaması İnternet (günlük sıralama ve reklam) ve titreşim (ayarı açıksa) iznini ister.
 
 ### Çocuklar
 

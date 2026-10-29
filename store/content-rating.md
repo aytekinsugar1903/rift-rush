@@ -35,9 +35,9 @@ Use this for the IARC form in Play Console (the questionnaire is the same set of
 
 | Question | Answer |
 | --- | --- |
-| Does the app contain advertising? | No for this build. No ad SDK is compiled in. Reward buttons do not display an ad. If you add AdMob later, change this answer before that release. |
+| Does the app contain advertising? | Yes. Player-chosen rewarded ads, and infrequent full-screen ads between later levels. None during a run. None in the first three levels. |
 | Made for kids / Designed for Families? | No. Public nicknames make Families enrollment the wrong choice. |
 
 ## Expected outcome
 
-Cartoon fantasy violence with public nicknames and no sexual content, gambling, or real purchases. IARC will typically land in a low or early-teen band depending on how it weighs user interaction. Record the official result in Play Console; do not type a guessed age on the store listing yourself.
+Cartoon fantasy violence, public nicknames, ads, and no sexual content, gambling, substances, or real purchases. IARC will typically land in a low or early-teen band depending on how it weighs user interaction and ads. Record the official result in Play Console; do not type a guessed age on the store listing yourself.
