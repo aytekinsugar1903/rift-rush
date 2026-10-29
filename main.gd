@@ -1,5 +1,6 @@
 extends Node3D
-## Rift Rush - v8.3 (3D gorunum, cok asamali bolumler). Tum sahne kodla kuruluyor.
+## Rift Rush 0.9.1 — 3D crowd runner. Sahne kodla kurulur.
+const GAME_VER := "0.9.1"
 
 const LANE := 4.4
 const BASE_Z := -38.0
@@ -11,6 +12,8 @@ const CYAN := Color(0.15, 0.95, 1.0)
 const ENEMY := Color(1.0, 0.38, 0.12)
 const PURPLE := Color(0.65, 0.2, 1.0)
 const HP_MULT := [1.0, 1.0, 0.9, 0.85, 0.85, 0.85]
+# Eğri: L1 öğretici (geniş iyi kapı, yavaş dalga, bol mermi). L2–L3 ilk gerçek sınav.
+# L4–L6 üç kale: mermi yarıya düşmez; boss daha sert ama yardım (yenilgi serisi) adil kalır.
 var maxp := 900
 var last_us := 0
 var wave_t := 0.0
@@ -23,27 +26,27 @@ var is_low := false
 
 # gate: [z, x, genislik, islem, hareket_genligi]
 const LEVELS := [
-	{"ammo": 194, "time": 120.0, "sections": [
-		{"hp": 150, "spawn": 3.4, "brute": 0.0, "gates": [[-10.0, -2.4, 3.6, "x2", 0.0], [-10.0, 2.4, 3.6, "+10", 0.0], [-23.0, 0.0, 3.4, "x3", 2.4]]},
-		{"hp": 330, "spawn": 2.6, "brute": 0.0, "gates": [[-9.0, -2.4, 3.6, "x2", 0.0], [-9.0, 2.4, 3.6, "-5", 0.0], [-18.0, 0.0, 3.0, "+10", 2.2], [-27.0, 0.0, 3.4, "x3", 1.8]]}]},
+	{"ammo": 220, "time": 140.0, "sections": [
+		{"hp": 120, "spawn": 4.2, "brute": 0.0, "gates": [[-10.0, -2.2, 4.4, "x2", 0.0], [-10.0, 2.2, 4.2, "+10", 0.0], [-23.0, 0.0, 3.8, "x3", 1.3]]},
+		{"hp": 260, "spawn": 3.2, "brute": 0.0, "gates": [[-9.0, -2.2, 4.4, "x2", 0.0], [-9.0, 2.6, 2.6, "-5", 0.0], [-18.0, 0.0, 3.4, "+10", 1.3], [-27.0, 0.0, 3.6, "x3", 1.2]]}]},
+	{"ammo": 210, "time": 125.0, "sections": [
+		{"hp": 210, "spawn": 2.05, "brute": 0.04, "gates": [[-9.0, -2.2, 4.2, "x2", 0.0], [-9.0, 2.4, 3.2, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.6]]},
+		{"hp": 360, "spawn": 1.55, "brute": 0.09, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 3.4, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 1.8], [-27.0, -1.0, 4.4, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
 	{"ammo": 200, "time": 120.0, "sections": [
-		{"hp": 220, "spawn": 1.9, "brute": 0.05, "gates": [[-9.0, -2.2, 4.0, "x2", 0.0], [-9.0, 2.2, 4.0, "-5", 0.0], [-20.0, 0.0, 3.4, "x3", 1.8]]},
-		{"hp": 372, "spawn": 1.45, "brute": 0.1, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-17.0, 0.0, 3.2, "+10", 2.2], [-27.0, -1.0, 4.6, "x2", 0.0], [-21.0, 3.0, 2.6, "kalkan", 0.0]]}]},
-	{"ammo": 205, "time": 120.0, "sections": [
-		{"hp": 250, "spawn": 1.4, "brute": 0.15, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.6], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 4.0, "-5", 0.0]]},
-		{"hp": 375, "spawn": 1.1, "brute": 0.2, "gates": [[-8.0, 0.0, 3.2, "x3", 2.4], [-17.0, -2.4, 3.2, "kalkan", 0.0], [-17.0, 2.4, 3.2, "x2", 0.0], [-26.0, 0.0, 3.2, "dev", 1.8]]}]},
-	{"ammo": 110, "time": 130.0, "sections": [
-		{"hp": 260, "spawn": 1.3, "brute": 0.12, "gates": [[-8.0, 0.0, 3.0, "-5", 2.6], [-15.0, -2.2, 4.0, "x2", 0.0], [-15.0, 2.2, 4.0, "okcu", 0.0], [-25.0, 0.0, 3.0, "x3", 2.4]]},
-		{"hp": 450, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x3", 0.0], [-8.0, 2.2, 4.0, "-5", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.6], [-27.0, -2.2, 4.0, "dev", 0.0], [-27.0, 2.2, 4.0, "x2", 0.0]]},
-		{"hp": 800, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x2", 0.0], [-18.0, 0.0, 3.2, "x3", 2.4], [-27.0, -2.8, 2.8, "okcu", 0.0], [-27.0, 0.0, 2.8, "dev", 0.0], [-27.0, 2.8, 2.8, "-5", 0.0]]}]},
-	{"ammo": 120, "time": 140.0, "sections": [
-		{"hp": 300, "spawn": 1.2, "brute": 0.15, "gates": [[-8.0, -2.8, 2.8, "x2", 0.0], [-8.0, 0.0, 2.8, "-5", 0.0], [-8.0, 2.8, 2.8, "x3", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.4], [-27.0, 0.0, 3.0, "dev", 2.0]]},
-		{"hp": 550, "spawn": 0.9, "brute": 0.22, "gates": [[-8.0, 0.0, 3.0, "x3", 2.6], [-17.0, -2.2, 4.0, "okcu", 0.0], [-17.0, 2.2, 4.0, "-5", 0.0], [-26.0, -2.2, 4.0, "x2", 0.0], [-26.0, 2.2, 4.0, "kalkan", 0.0]]},
-		{"hp": 950, "spawn": 0.75, "brute": 0.3, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "+10", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "okcu", 1.0], [-26.0, 2.8, 2.8, "-5", 0.0]]}]},
-	{"ammo": 130, "time": 150.0, "sections": [
-		{"hp": 350, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, 0.0, 3.0, "-5", 2.8], [-14.0, -2.2, 4.0, "x3", 0.0], [-14.0, 2.2, 4.0, "kalkan", 0.0], [-24.0, 0.0, 3.0, "dev", 2.2]]},
-		{"hp": 650, "spawn": 0.8, "brute": 0.25, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "okcu", 0.0], [-17.0, 0.0, 3.0, "x3", 2.6], [-26.0, -2.8, 2.8, "-5", 0.0], [-26.0, 0.0, 2.8, "kalkan", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]},
-		{"hp": 1200, "spawn": 0.65, "brute": 0.32, "gates": [[-8.0, 0.0, 3.0, "x2", 2.6], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 4.0, "-5", 0.0], [-25.0, -2.2, 4.0, "dev", 0.0], [-25.0, 2.2, 4.0, "okcu", 0.0]]}]},
+		{"hp": 240, "spawn": 1.5, "brute": 0.12, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x3", 0.0], [-18.0, 0.0, 3.6, "dev", 1.5], [-27.0, -2.2, 4.0, "okcu", 0.0], [-27.0, 2.2, 3.4, "-5", 0.0]]},
+		{"hp": 370, "spawn": 1.2, "brute": 0.18, "gates": [[-8.0, 0.0, 3.2, "x3", 2.0], [-17.0, -2.4, 3.2, "kalkan", 0.0], [-17.0, 2.4, 3.2, "x2", 0.0], [-26.0, 0.0, 3.2, "dev", 1.6]]}]},
+	{"ammo": 195, "time": 140.0, "sections": [
+		{"hp": 230, "spawn": 1.45, "brute": 0.08, "gates": [[-8.0, 0.0, 2.6, "-5", 2.0], [-15.0, -2.2, 4.2, "x2", 0.0], [-15.0, 2.2, 4.0, "okcu", 0.0], [-25.0, 0.0, 3.4, "x3", 1.8]]},
+		{"hp": 340, "spawn": 1.25, "brute": 0.14, "gates": [[-8.0, -2.2, 4.2, "x3", 0.0], [-8.0, 2.4, 3.2, "-5", 0.0], [-18.0, 0.0, 3.2, "kalkan", 2.0], [-27.0, -2.2, 4.0, "dev", 0.0], [-27.0, 2.2, 4.0, "x2", 0.0]]},
+		{"hp": 680, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "x2", 0.0], [-18.0, 0.0, 3.4, "x3", 1.8], [-27.0, -2.8, 2.8, "okcu", 0.0], [-27.0, 0.0, 2.8, "dev", 0.0], [-27.0, 2.8, 2.6, "-5", 0.0]]}]},
+	{"ammo": 158, "time": 145.0, "sections": [
+		{"hp": 280, "spawn": 1.25, "brute": 0.14, "gates": [[-8.0, -2.8, 2.8, "x2", 0.0], [-8.0, 0.0, 2.6, "-5", 0.0], [-8.0, 2.8, 2.8, "x3", 0.0], [-18.0, 0.0, 3.0, "kalkan", 2.0], [-27.0, 0.0, 3.0, "dev", 1.7]]},
+		{"hp": 520, "spawn": 1.0, "brute": 0.2, "gates": [[-8.0, 0.0, 3.0, "x3", 2.2], [-17.0, -2.2, 4.0, "okcu", 0.0], [-17.0, 2.2, 3.4, "-5", 0.0], [-26.0, -2.2, 4.0, "x2", 0.0], [-26.0, 2.2, 4.0, "kalkan", 0.0]]},
+		{"hp": 880, "spawn": 0.85, "brute": 0.26, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "+10", 0.0], [-17.0, 0.0, 3.0, "x3", 2.2], [-26.0, -2.8, 2.8, "dev", 0.0], [-26.0, 0.0, 2.8, "okcu", 1.0], [-26.0, 2.8, 2.6, "-5", 0.0]]}]},
+	{"ammo": 150, "time": 150.0, "sections": [
+		{"hp": 320, "spawn": 1.05, "brute": 0.18, "gates": [[-8.0, 0.0, 2.8, "-5", 2.4], [-14.0, -2.2, 4.0, "x3", 0.0], [-14.0, 2.2, 4.0, "kalkan", 0.0], [-24.0, 0.0, 3.0, "dev", 1.8]]},
+		{"hp": 600, "spawn": 0.88, "brute": 0.24, "gates": [[-8.0, -2.2, 4.0, "x2", 0.0], [-8.0, 2.2, 4.0, "okcu", 0.0], [-17.0, 0.0, 3.0, "x3", 2.2], [-26.0, -2.8, 2.6, "-5", 0.0], [-26.0, 0.0, 2.8, "kalkan", 0.0], [-26.0, 2.8, 2.8, "x2", 0.0]]},
+		{"hp": 1050, "spawn": 0.74, "brute": 0.28, "gates": [[-8.0, 0.0, 3.0, "x2", 2.2], [-16.0, -2.2, 4.0, "x3", 0.0], [-16.0, 2.2, 3.4, "-5", 0.0], [-25.0, -2.2, 4.0, "dev", 0.0], [-25.0, 2.2, 4.0, "okcu", 0.0]]}]},
 ]
 const CARD_NAMES := ["Savaşçı", "Okçu", "Dev", "Büyücü"]
 const CARD_REQ := [0, 3, 4, 6]       # gereken 'unlocked' (2. bolum bitince unlocked=3)
@@ -179,6 +182,8 @@ var level_root: Node3D
 var crystals: Array = []
 
 var hud: Control
+var hud_top: VBoxContainer
+var fx_flash: ColorRect
 var lbl_level: Label
 var lbl_time: Label
 var lbl_ammo: Label
@@ -188,6 +193,7 @@ var sec_bars: Array = []
 var hint: Control
 var hand: Control
 var menu: Control
+var menu_gap: Control
 var lbl_coins: Label
 var lvl_btns: Array = []
 var up_btn: Button
@@ -223,8 +229,11 @@ var slot_btns: Array = []
 var card_rows: VBoxContainer
 var lo_level := 0
 var dailyp: Control
+var daily_title: Label
 var daily_info: Label
 var daily_list: Label
+var daily_scroll: ScrollContainer
+var metrics_key := ""
 var nick_edit: LineEdit
 var btn_revive: Button
 var lb_http: HTTPRequest
@@ -668,6 +677,8 @@ func _ready() -> void:
 		await get_tree().create_timer(0.5).timeout
 		print("HELPCHECK after_win help=%s start_ammo=%d tag=%s" % [help_on, start_ammo, help_tag.visible])
 		get_tree().quit()
+	elif args.size() > 0 and args[0] == "uicheck":
+		await _uicheck(args[1] if args.size() > 1 else "")
 	elif args.size() > 0 and args[0] == "autoplay":
 		_autoplay(int(args[1]) if args.size() > 1 else 0)
 	elif args.size() > 0 and args[0] == "flowtest":
@@ -1244,8 +1255,9 @@ func _build_world() -> void:
 	pm.vertex_color_use_as_albedo = true
 	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var pmesh := BoxMesh.new(); pmesh.size = Vector3(0.18, 0.18, 0.18); pmesh.material = pm
+	var pmax := 12 if is_web else 28
 	for i in 24:
-		parts.append(_particles(pmesh, 9 if is_web else 16, 0.55, 3.0, 7.0, -14.0))
+		parts.append(_particles(pmesh, pmax, 0.5, 3.5, 8.5, -16.0))
 	var cm := StandardMaterial3D.new()
 	cm.vertex_color_use_as_albedo = true
 	var cmesh := BoxMesh.new(); cmesh.size = Vector3(0.45, 0.35, 0.4); cmesh.material = cm
@@ -1318,7 +1330,7 @@ func _build_island(total: float) -> void:
 	for k in rk: _scatter(k, rocks[k], level_root)
 	_scatter("res://assets/nature/cliff_large_rock.glb", cliffs, level_root)
 
-func sfx(k: String, db := 0.0, gap := 0.05, pv := 0.12) -> void:
+func sfx(k: String, db := 0.0, gap := 0.05, pv := 0.12, pitch := 1.0) -> void:
 	if not opt["sfx"]: return
 	if menu_mode and not k in ["click", "coin", "star", "combo"]: return
 	var now := t
@@ -1328,7 +1340,7 @@ func sfx(k: String, db := 0.0, gap := 0.05, pv := 0.12) -> void:
 	sfx_i = (sfx_i + 1) % sfx_players.size()
 	ap.stream = _pick(sfx_streams[k])
 	ap.volume_db = db
-	ap.pitch_scale = randf_range(1.0 - pv, 1.0 + pv)
+	ap.pitch_scale = clampf(pitch * randf_range(1.0 - pv, 1.0 + pv), 0.55, 1.85)
 	ap.play()
 
 func _pick(v) -> AudioStream:
@@ -1345,6 +1357,8 @@ func burst(pos: Vector3, c: Color, amount := 20) -> void:
 	part_i = (part_i + 1) % parts.size()
 	p.position = pos
 	p.color = c
+	var cap := 12 if is_web else 28
+	p.amount = clampi(amount, 4, cap)
 	p.restart()
 
 func chunk_burst(pos: Vector3, c: Color) -> void:
@@ -1613,8 +1627,9 @@ func _setup_section() -> void:
 	if sec == cur_L["sections"].size() - 1 and help_cut > 0.0:
 		base_max = int(base_max * (1.0 - help_cut))
 	base_hp = base_max
-	spawn_t = 2.0
-	wave_t = 7.0
+	# L1 ilk kale: ordu kurulsun, dusman gec gelsin. Sonraki bolumlerde dalga daha erken.
+	spawn_t = 5.2 if (level == 0 and sec == 0 and not daily and not menu_mode) else 2.2
+	wave_t = 14.0 if level <= 1 else (10.0 if level <= 3 else 8.0)
 
 func _update_titles() -> void:
 	var n: int = cur_L["sections"].size()
@@ -1835,16 +1850,23 @@ func _process(dt: float) -> void:
 	barrel.position.x = lerpf(barrel.position.x, cannon_x, minf(1.0, dt * 60.0))  # parmagi siki takip et (hafif yumusatma)
 	barrel.position.z = lerpf(barrel.position.z, 0.0, minf(1.0, dt * 14.0))
 	flash_t = maxf(0.0, flash_t - dt * 10.0)
-	flash.scale = Vector3.ONE * flash_t * 1.1
-	flash_light.light_energy = flash_t * 4.0
-	trauma = maxf(0.0, trauma - dt * 2.5)
+	flash.scale = Vector3.ONE * flash_t * 1.35
+	flash_light.light_energy = flash_t * 5.0
+	if ring:
+		ring.scale = Vector3.ONE * (1.0 + flash_t * 0.45)
+	if fx_flash and fx_flash.color.a > 0.0:
+		fx_flash.color.a = maxf(0.0, fx_flash.color.a - dt * 3.2)
+	trauma = maxf(0.0, trauma - dt * 1.65)
 	# kamera: topun arkasi, alcak acı, ordu ilerledikce ileri itilir
 	cam_push = lerpf(cam_push, clampf(-front * 0.06, 0.0, 1.8), minf(1.0, dt * 2.0))
 	var cz := cannon.position.z
 	var target := Vector3(0.0, 13.0 if land else 15.0, cz + (11.5 if land else 13.0) - cam_push)
 	cam.position = cam.position.lerp(target, minf(1.0, dt * 4.0))
-	var sh := trauma * trauma * 0.18
-	cam.look_at(Vector3(0.0, 0, cam.position.z - (25.0 if land else 18.5)) + Vector3(randf_range(-sh, sh), randf_range(-sh, sh), 0))
+	var mag := trauma * trauma
+	var sh := mag * 0.85
+	cam.position += Vector3(sin(t * 61.0) * sh, cos(t * 47.0) * sh * 0.55, 0.0)
+	cam.look_at(Vector3(0.0, 0, cam.position.z - (25.0 if land else 18.5)) + Vector3(sin(t * 73.0) * sh * 0.35, cos(t * 59.0) * sh * 0.25, 0))
+	cam.rotation.z = sin(t * 53.0) * mag * 0.05
 	if menu_mode:
 		var ang := t * 0.12
 		cam.position = Vector3(sin(ang) * 20.0, 10.0, -18.0 + cos(ang) * 20.0)
@@ -1860,12 +1882,16 @@ func _process(dt: float) -> void:
 		cam.position = Vector3(0.0, 6.0, sec_off + 10.0)
 		cam.look_at(Vector3(0.0, 1.0, sec_off - 30.0))
 	if mapp and mapp.visible and board_ref:
-		# harita her en-boy oraninda sigar (yatay/genis pencerede 1. bolum kesilmez)
+		# harita guvenli alana sigar (uzun telefonda yanlar kirpilmez, yatayda 1. bolum kesilmez)
 		var ms := mapp.size
-		var sc := minf(1.0, minf(ms.y / 1920.0, ms.x / 1080.0))
+		var safe := _safe_view()
+		var sc := minf(1.0, minf(safe.y / 1920.0, safe.x / 1080.0))
 		board_ref.scale = Vector2.ONE * sc
-		board_ref.position = Vector2(ms.x * 0.5 - 540.0 * sc, maxf(0.0, (ms.y - 1920.0 * sc) * 0.5))
+		var sx := (ms.x - safe.x) * 0.5
+		var sy := (ms.y - safe.y) * 0.5
+		board_ref.position = Vector2(sx + (safe.x - 1080.0 * sc) * 0.5, sy + maxf(0.0, (safe.y - 1920.0 * sc) * 0.5))
 	_alive(dt)
+	_apply_metrics()
 	_fit_panels()
 	var t0 := Time.get_ticks_usec()
 	var now := Time.get_ticks_usec()
@@ -1896,12 +1922,12 @@ func _sim(dt: float) -> void:
 			shots_fired += 1
 			if daily and shots_fired % 5 == 0: _update_titles()
 			_add_p(barrel.position.x + randf_range(-0.2, 0.2), -1.0, randf_range(-0.6, 0.6), 0, ty)
-			barrel.position.z = 0.35
-			sfx("shot", -10.0, 0.07)
+			barrel.position.z = 0.55
+			sfx("shot", -6.5, 0.06, 0.08, 1.0)
 			dust_t -= 1.0
 			if dust_t <= 0.0:
-				dust_t = 3.0
-				puff(Vector3(barrel.position.x, 0.3, sec_off + 0.2))
+				dust_t = 1.0
+				puff(Vector3(barrel.position.x, 0.35, sec_off + 0.4))
 			flash_t = 1.0
 	else:
 		fire_acc = minf(fire_acc, 1.0)
@@ -2036,29 +2062,48 @@ func _sim(dt: float) -> void:
 					g["combo"] = clv + 1
 					_combo(["HARİKA!", "MUHTEŞEM!", "EFSANE!"][clv])
 				if not txtop or g["cool"] <= 0.0: cl.modulate.a = 1.0
-				cl.scale = Vector3.ONE * 1.35
-				create_tween().tween_property(cl, "scale", Vector3.ONE, 0.15)
-				nd.scale = Vector3(1.12, 1.12, 1.12)
-				create_tween().tween_property(nd, "scale", Vector3.ONE, 0.14)
+				var goodp := pnd > 0
+				cl.scale = Vector3.ONE * (1.55 if goodp else 1.2)
+				nd.scale = Vector3(1.22, 1.34, 1.22) if goodp else Vector3(1.24, 0.76, 1.24)
+				var twg: Tween = g.get("tw")
+				if twg and twg.is_valid(): twg.kill()
+				twg = create_tween()
+				g["tw"] = twg
+				twg.tween_property(cl, "scale", Vector3.ONE, 0.16)
+				twg.parallel().tween_property(nd, "scale", Vector3.ONE, 0.16)
 				var pm: StandardMaterial3D = g["pmat"]
-				pm.emission_energy_multiplier = 4.0
-				create_tween().tween_property(pm, "emission_energy_multiplier", 0.8, 0.25)
-				burst(nd.position + Vector3(0, 1.5, 0), g["col"], 14)
+				pm.emission_energy_multiplier = 6.0 if goodp else 2.2
+				twg.parallel().tween_property(pm, "emission_energy_multiplier", 0.8, 0.28)
+				burst(nd.position + Vector3(0, 1.6, 0.4), g["col"], 26 if goodp else 16)
+				if goodp:
+					burst(nd.position + Vector3(0, 2.2, 0.6), Color(1, 1, 1), 8)
 				g["pend"] = 0
-				sfx("gate", -8.0, 0.12)
+				if txtop and goodp:
+					sfx("star", -6.0, 0.1, 0.06, 1.12)
+					_kick(0.22, 0.55)
+					_splash(g["col"], 0.16)
+				elif pnd < 0:
+					sfx("hit", -2.0, 0.08, 0.04, 0.68)
+					_kick(0.38, 0.75)
+					_splash(Color(1.0, 0.25, 0.28), 0.26)
+					_vib(22)
+				else:
+					sfx("gate", -3.5, 0.09, 0.06, 1.06 + minf(0.18, float(maxi(tot, 0)) / 420.0))
+					_kick(0.16, 0.5)
+					_splash(g["col"], 0.12)
 	var B: Dictionary = bases[sec]
 	if base_hits > 0:
 		base_hp -= base_hits
-		sfx("basehit", -6.0, 0.09)
-		trauma = minf(0.5, trauma + 0.01 * base_hits)
+		sfx("basehit", -4.0, 0.08, 0.06, 0.95)
+		_kick(0.045 * base_hits, 0.55)
 		var bn: Node3D = B["node"]
 		var bs: float = 1.25 if sec == bases.size() - 1 else 1.0
 		bn.scale = Vector3(1.05, 0.96, 1.05) * bs
 		create_tween().tween_property(bn, "scale", Vector3.ONE * bs, 0.08)
-		if randf() < 0.35:
+		if randf() < 0.6:
 			chunk_burst(Vector3(randf_range(-3, 3), randf_range(2, 4), bn.position.z + 1.5), Color(0.8, 0.3, 0.15))
-		if randf() < 0.5:
-			burst(Vector3(randf_range(-3, 3), 2, bn.position.z + 1.6), ENEMY, 14)
+		if randf() < 0.75:
+			burst(Vector3(randf_range(-3, 3), 2, bn.position.z + 1.6), ENEMY, 18)
 		var ratio := float(base_hp) / base_max
 		var want := 3 if ratio < 0.25 else (2 if ratio < 0.5 else (1 if ratio < 0.75 else 0))
 		while B["cracks"] < want:
@@ -2080,7 +2125,7 @@ func _sim(dt: float) -> void:
 	if not menu_mode and not daily and level > 0:
 		wave_t -= dt
 		if wave_t <= 0.0:
-			wave_t = maxf(9.0, 16.0 - level * 1.4) * randf_range(0.85, 1.15)
+			wave_t = maxf(10.0, 17.5 - level * 1.15) * randf_range(0.9, 1.15)
 			var cxw := randf_range(-2.0, 2.0)
 			var cols := mini(3 + level / 2, 5)
 			# yardim: dalga boyu -%20 / -%40 (arka siralar eksik gelir)
@@ -2092,7 +2137,9 @@ func _sim(dt: float) -> void:
 					ex.append(clampf(cxw + (q - (cols - 1) * 0.5) * 0.7, -3.8, 3.8)); ez.append(BASE_Z + 3.0 + r * 0.7)
 					ehp.append(1); esc.append(1.0); ewv.append(1 if is_boss else 0)
 			_banner("DALGA!", ENEMY)
-			sfx("arrow", -6.0, 0.1)
+			sfx("combo", -6.0, 0.2, 0.04, 0.82)
+			_kick(0.28, 0.6)
+			_splash(ENEMY, 0.18)
 	ammo_pop_t -= dt
 	spark_n = 0
 	for k in buckets.size():
@@ -2109,9 +2156,11 @@ func _sim(dt: float) -> void:
 		ez[j] = ezj; ex[j] = exj
 		if ezj > 0.5:
 			ammo = maxi(0, ammo - 3)
-			trauma = minf(1.0, trauma + 0.5)
-			burst(Vector3(exj, 1, sec_off + 0.5), ENEMY, 24)
-			pop_text(Vector3(exj, 2.5, sec_off + 0.5), "-3", Color(1, 0.3, 0.3))
+			_kick(0.72, 1.0)
+			burst(Vector3(exj, 1, sec_off + 0.5), ENEMY, 28)
+			pop_text(Vector3(exj, 2.5, sec_off + 0.5), "-3", Color(1, 0.3, 0.3), true)
+			sfx("hit", -1.0, 0.05, 0.03, 0.62)
+			_splash(Color(1.0, 0.2, 0.18), 0.34)
 			_vib(50)
 			_kill_e(j)
 			continue
@@ -2139,10 +2188,11 @@ func _sim(dt: float) -> void:
 						continue
 					dead[idx] = 1
 					_fly(px[idx], pz[idx], 0)
-					if spark_n < 3:
+					if spark_n < 7:
 						spark_n += 1
-						burst(Vector3(px[idx], 0.9, pz[idx] + sec_off), Color(1, 0.9, 0.4), 10)
-						sfx("hit", -9.0, 0.06)
+						burst(Vector3(px[idx], 0.9, pz[idx] + sec_off), Color(1, 0.95, 0.55), 16)
+						sfx("hit", -5.0, 0.045, 0.1, 1.05)
+						_kick(0.045, 0.26)
 					if hp <= 0: break
 			if hp <= 0: break
 		ehp[j] = hp
@@ -2151,8 +2201,12 @@ func _sim(dt: float) -> void:
 			burst(Vector3(exj, 0.8, ezj + sec_off), ENEMY if esc[j] < 1.5 else Color(1, 0.8, 0.2), 18)
 			if esc[j] < 1.5: _fly(exj, ezj, 1)
 			if esc[j] > 1.5:
-				trauma = minf(1.0, trauma + 0.3)
+				_kick(0.48, 0.8)
 				chunk_burst(Vector3(exj, 1, ezj + sec_off), ENEMY)
+				burst(Vector3(exj, 1.4, ezj + sec_off), Color(1, 0.85, 0.3), 22)
+				sfx("explode", -7.0, 0.12, 0.05, 0.78)
+				_punch(3.2)
+				_splash(Color(1.0, 0.7, 0.25), 0.22)
 			_kill_e(j)
 	for i in range(np - 1, -1, -1):
 		if dead[i] == 1:
@@ -2201,11 +2255,11 @@ func _sim(dt: float) -> void:
 		return
 	if bench or menu_mode: return
 	if time_left <= 0.0:
-		_lose("Süre doldu!\nİpucu: ×2 / ×3 kapılarından geçir,\nkırmızı kapılardan kaçın.")
+		_lose("Süre doldu!\n×2 / ×3 kapısından geç.\nKırmızı kapıdan kaç.")
 	elif ammo <= 0 and px.size() == 0:
 		end_grace += dt
 		if end_grace > 0.6:
-			_lose("Mermin ve ordun bitti!\nİpucu: Düşman öldürmek mermi verir.\nTopa ulaşan düşman 3 mermi götürür.")
+			_lose("Mermi ve ordu bitti!\nDüşman öldür: +mermi.\nSana ulaşan düşman: −3.")
 
 func _reward(x: float, z: float, brute: bool, wave := false) -> void:
 	if menu_mode: return
@@ -2226,9 +2280,11 @@ func _ammo_popup(_x: float, _z: float, add: int) -> void:
 	ammo_pop_t = 0.9
 	ammo_pop.text = "+%d mermi" % ammo_pop_n
 	ammo_pop.modulate.a = 1.0
+	sfx("coin", -14.0, 0.1, 0.08, 1.35)
 	if ammo_bar:
 		var r := ammo_bar.get_global_rect()
-		ammo_pop.position = Vector2(r.end.x + 12, r.get_center().y - ammo_pop.size.y * 0.5)
+		var x := clampf(r.end.x + 8.0, 12.0, get_viewport().get_visible_rect().size.x - ammo_pop.size.x - 12.0)
+		ammo_pop.position = Vector2(x, r.get_center().y - ammo_pop.size.y * 0.5)
 	ammo_pop.scale = Vector2.ONE * 1.2
 	ammo_pop.create_tween().tween_property(ammo_pop, "scale", Vector2.ONE, 0.1)
 
@@ -2300,6 +2356,7 @@ func _base_destroyed() -> void:
 	var B: Dictionary = bases[sec]
 	var bn: Node3D = B["node"]
 	trauma = 1.0
+	_splash(Color(1.0, 0.85, 0.45), 0.42)
 	var final := sec + 1 >= bases.size()
 	_crumble(bn)
 	_hitstop(final)
@@ -2480,9 +2537,9 @@ func _win() -> void:
 		earned = full
 	coins += earned
 	hint_seen = true
-	win_lines = "1. yıldız: Kale yıkıldı\n2. yıldız: %d+ sn kalsın (%d) %s\n3. yıldız: %d+ mermi kalsın (%d) %s\nBölüm %d + Mermi %d + Süre %d + Kale %d" % [int(tmax * 0.3), c_time, "OK" if s_time else "X", int(start_ammo * 0.25), ammo, "OK" if s_ammo else "X", c_lvl, c_ammo, c_time, kale_coins]
+	win_lines = "1. yıldız: kale yıkıldı\n2. yıldız: %d+ sn (%d) %s\n3. yıldız: %d+ mermi (%d) %s\nBölüm %d · Mermi %d\nSüre %d · Kale %d" % [int(tmax * 0.3), c_time, "OK" if s_time else "X", int(start_ammo * 0.25), ammo, "OK" if s_ammo else "X", c_lvl, c_ammo, c_time, kale_coins]
 	if is_replay:
-		win_lines = win_lines.replace("\nBölüm %d +" % c_lvl, "\nTekrar: %%30 (yeni yıldız %d)\nBölüm %d +" % [new_st, c_lvl])
+		win_lines = ("Tekrar %%30 · yeni yıldız %d\n" % new_st) + win_lines
 	stars_best[level] = maxi(int(stars_best.get(level, 0)), st)
 	doubled = false
 	levels_since_ad += 1
@@ -2529,6 +2586,8 @@ func _show_result(lock := 0.5) -> void:
 	# ekran acildiktan sonraki taze bas+birak ilk denemede calisir.
 	res_ready = true
 	for b: Button in res_btns:
+		if b.visible:
+			_fit_btn_font(b, 52, 30)
 		b.mouse_filter = Control.MOUSE_FILTER_STOP
 		b.modulate.a = 0.6
 		create_tween().set_ignore_time_scale(true).tween_property(b, "modulate:a", 1.0, minf(lock, 0.25))
@@ -2543,10 +2602,20 @@ func _on_double() -> void:
 			res_info.text = "+%d coin (2×)   (Toplam: %d)" % [earned * 2, coins]
 			btn_double.visible = false)
 
+const INTERSTITIAL_GAP_MS := 180000
+var last_interstitial_ms := 0
+
 func _maybe_interstitial(then: Callable) -> void:
-	# adil reklam: ilk 3 bolumde asla, sonra en fazla 3 bolumde bir
-	if level >= 3 and levels_since_ad >= 3:
+	# Between levels only: never while a run is in progress, never in levels 1-3,
+	# then at most once every 3 wins and not twice inside three minutes.
+	if playing:
+		then.call()
+		return
+	var due := level >= 3 and levels_since_ad >= 3
+	var gap_ok := last_interstitial_ms == 0 or Time.get_ticks_msec() - last_interstitial_ms >= INTERSTITIAL_GAP_MS
+	if due and gap_ok:
 		levels_since_ad = 0
+		last_interstitial_ms = Time.get_ticks_msec()
 		_save()
 		Ads.show_interstitial(then)
 	else:
@@ -2566,7 +2635,10 @@ func _on_revive() -> void:
 
 func _on_next() -> void:
 	if daily:
-		_show_daily()
+		if res_title.text == "ZAFER!":
+			_show_daily()
+		else:
+			start_daily()
 		return
 	if res_title.text == "ZAFER!":
 		if level + 1 < LEVELS.size():
@@ -2574,8 +2646,6 @@ func _on_next() -> void:
 			_maybe_interstitial(func() -> void: _show_loadout(nxt))
 		else:
 			_maybe_interstitial(_show_menu)
-	elif daily:
-		start_daily()
 	else:
 		_start(cur_L, level)
 
@@ -2667,19 +2737,122 @@ func _panel(parent: Node) -> VBoxContainer:
 	panel_fit.append([root, cc, v])
 	return v
 
-# v8.7: panel icerigi ekrana sigmiyorsa (yatay pencere) tum paneli ortadan kucult
+# Panel hem yukseklige hem genislige sigar. Olcek < 1 iken pivot, icerigin ortasini ekran ortasinda tutar.
 var panel_fit: Array = []
+func _view_size() -> Vector2:
+	return get_viewport().get_visible_rect().size
+
+# keep_height: uzun telefonda tuval yuksekligi pencereye yayilir, yanlar kirpilir.
+# Guvenli alan, ekranda gercekten gorunen tuval bolgesidir.
+func _safe_view() -> Vector2:
+	var vp := _view_size()
+	var win := Vector2(get_window().size)
+	if win.y < 2.0 or vp.y < 2.0:
+		return vp
+	var csf := maxf(0.01, get_window().content_scale_factor)
+	var scale := csf * win.y / 1920.0
+	var vis := Vector2(win.x / scale, win.y / scale)
+	return Vector2(minf(vis.x, vp.x), minf(vis.y, vp.y))
+
+func _safe_rect() -> Rect2:
+	var vp := get_viewport().get_visible_rect()
+	var safe := _safe_view()
+	var origin := Vector2((vp.size.x - safe.x) * 0.5, (vp.size.y - safe.y) * 0.5)
+	return Rect2(vp.position + origin, safe)
+
+func _wrap_w() -> float:
+	return clampf(_safe_view().x - 72.0, 420.0, 920.0)
+
+func _slot_size() -> Vector2:
+	var vr := _view_size()
+	var land := vr.x > vr.y
+	var w := minf(280.0, (_wrap_w() - 40.0) / 3.0)
+	return Vector2(maxf(150.0, w), 148.0 if land else 176.0)
+
+func _fit_btn_font(b: Button, max_size: int, min_size := 28) -> void:
+	if b == null: return
+	var font := b.get_theme_font("font")
+	if font == null: font = ThemeDB.fallback_font
+	var longest := 0.0
+	for ln in b.text.split("\n"):
+		longest = maxf(longest, font.get_string_size(ln, HORIZONTAL_ALIGNMENT_LEFT, -1, max_size).x)
+	var inner := maxf(80.0, b.custom_minimum_size.x - 56.0)
+	var s := max_size
+	while s > min_size and longest * (float(s) / float(max_size)) > inner:
+		s -= 2
+	b.add_theme_font_size_override("font_size", s)
+
+func _apply_metrics() -> void:
+	var vr := _view_size()
+	var key := "%s|%s|%.3f" % [vr, get_window().size, get_window().content_scale_factor]
+	if key == metrics_key or vr.x < 8.0: return
+	metrics_key = key
+	var land := vr.x > vr.y
+	var wrap := _wrap_w()
+	if menu_gap:
+		menu_gap.custom_minimum_size = Vector2(0, 48.0 if land else 240.0)
+	if logo:
+		var lw := minf(wrap, 920.0)
+		var lh := 250.0 if land else 330.0
+		logo.custom_minimum_size = Vector2(lw, lh)
+		var i := 0
+		for ch in logo.get_children():
+			if ch is Label:
+				var lb := ch as Label
+				lb.size = Vector2(lw, 170.0 if land else 200.0)
+				lb.add_theme_font_size_override("font_size", 150 if land else 196)
+				lb.position = Vector2(0, 0.0 if i == 0 else (118.0 if land else 150.0))
+				i += 1
+		logo.pivot_offset = Vector2(lw * 0.5, lh * 0.5)
+	if res_title:
+		res_title.add_theme_font_size_override("font_size", 92 if land else 118)
+	if res_info:
+		res_info.custom_minimum_size = Vector2(wrap, 210.0 if land else 260.0)
+		res_info.add_theme_font_size_override("font_size", 36 if land else 42)
+	if daily_title:
+		daily_title.custom_minimum_size = Vector2(wrap, 0)
+		daily_title.add_theme_font_size_override("font_size", 46 if (land or _safe_view().x < 1000.0) else 64)
+	if daily_info:
+		daily_info.custom_minimum_size = Vector2(wrap, 0)
+		daily_info.add_theme_font_size_override("font_size", 32 if land else 36)
+	if daily_scroll:
+		daily_scroll.custom_minimum_size = Vector2(wrap, 240.0 if land else 420.0)
+		if daily_list:
+			daily_list.custom_minimum_size = Vector2(maxf(200.0, wrap - 48.0), 0)
+			daily_list.add_theme_font_size_override("font_size", 30 if land else 34)
+	for b in slot_btns:
+		if is_instance_valid(b):
+			(b as Button).custom_minimum_size = _slot_size()
+	var side := maxf(12.0, (vr.x - _safe_view().x) * 0.5 + 18.0)
+	if hud_top:
+		hud_top.offset_left = side
+		hud_top.offset_right = -side
+	if hint_lbl:
+		hint_lbl.offset_left = side
+		hint_lbl.offset_right = -side
+	if ammo_warn:
+		ammo_warn.offset_left = side
+		ammo_warn.offset_right = -side
+	if help_tag:
+		help_tag.position.x = side
+	if loadout and loadout.visible:
+		_refresh_loadout()
+
 func _fit_panels() -> void:
-	var vh := get_viewport().get_visible_rect().size.y
+	var vr := _safe_view()
+	var vh := vr.y
+	var vp := _view_size()
 	for pf in panel_fit:
 		if not (pf[0] as Control).visible: continue
 		var cc: Control = pf[1]
-		var need: float = (pf[2] as Control).get_combined_minimum_size().y + 200.0
-		var sc := minf(1.0, vh / maxf(need, 1.0))
+		var ms: Vector2 = (pf[2] as Control).get_combined_minimum_size()
+		var need_y: float = ms.y + 72.0
+		var need_x: float = ms.x + 48.0
+		var sc := minf(1.0, minf(vh / maxf(need_y, 1.0), vr.x / maxf(need_x, 1.0)))
 		cc.pivot_offset = cc.size * 0.5
-		if sc < 0.999:
-			# v9.0: icerik ekrandan uzunsa (yatay) kap ekrandan tasar; pivotu, icerigin ortasi ekran ortasina gelecek sekilde sec (alt rozet kesilmez)
-			cc.pivot_offset.y = (vh * 0.5 - cc.size.y * 0.5 * sc) / (1.0 - sc)
+		if sc < 0.999 and absf(1.0 - sc) > 0.001:
+			var mid_y := (vp.y - vr.y) * 0.5 + vr.y * 0.5
+			cc.pivot_offset.y = (mid_y - cc.size.y * 0.5 * sc) / (1.0 - sc)
 		cc.scale = Vector2.ONE * sc
 
 func _build_ui() -> void:
@@ -2689,7 +2862,13 @@ func _build_ui() -> void:
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cl.add_child(hud)
-	var top := VBoxContainer.new()
+	fx_flash = ColorRect.new()
+	fx_flash.color = Color(1, 1, 1, 0)
+	fx_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fx_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(fx_flash)
+	hud_top = VBoxContainer.new()
+	var top := hud_top
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	top.offset_top = 40
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2735,7 +2914,7 @@ func _build_ui() -> void:
 	ammo_pop.add_theme_font_override("font", bold)
 	ammo_pop.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	ammo_pop.size = Vector2(260, 56)
-	ammo_pop.position = Vector2(810, 170)
+	ammo_pop.position = Vector2(40, 210)
 	ammo_pop.modulate.a = 0.0
 	help_tag = _label("Yardım: +%25 mermi", 44, hud, Color(0.6, 1.0, 0.65))
 	help_tag.add_theme_font_override("font", bold)
@@ -2751,7 +2930,7 @@ func _build_ui() -> void:
 	help_tag.position = Vector2(30, 395)
 	help_tag.size = Vector2(0, 0)
 	help_tag.visible = false
-	ammo_warn = _label("Mermi azalıyor — kapılardan geç, düşman vur", 43, hud, Color(1.0, 0.6, 0.25))
+	ammo_warn = _label("Mermi azalıyor\nKapıdan geç, düşman vur", 40, hud, Color(1.0, 0.6, 0.25))
 	ammo_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ammo_warn.add_theme_constant_override("outline_size", 14)
 	ammo_warn.add_theme_font_override("font", bold)
@@ -2767,7 +2946,7 @@ func _build_ui() -> void:
 	banner.add_theme_constant_override("outline_size", 18)
 	banner.visible = false
 	# v8.6: dar dikey ekranda okunur: buyuk, tam opak beyaz, kalin kontur, gerekirse 2 satir
-	var hl := _label("Basılı tut: nişan + ateş · Düşman öldür: +mermi", 46, hud, Color(1, 1, 1))
+	var hl := _label("Basılı tut: nişan + ateş\nDüşman öldür: +mermi", 42, hud, Color(1, 1, 1))
 	hint_lbl = hl
 	hl.add_theme_font_override("font", bold)
 	hl.add_theme_constant_override("outline_size", 14)
@@ -2814,9 +2993,9 @@ func _build_ui() -> void:
 	mv.add_child(lgap)
 	_label("Ordunu kur, yarığı kapat!", 46, mv, Color(1, 0.95, 0.8))
 	lbl_coins = _label("", 60, mv, Color(1, 0.85, 0.2))
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 300)
-	mv.add_child(gap)
+	menu_gap = Control.new()
+	menu_gap.custom_minimum_size = Vector2(0, 240)
+	mv.add_child(menu_gap)
 	var pb := _btn("OYNA", Color(0.1, 0.72, 0.4), mv, _show_map)
 	pb.custom_minimum_size = Vector2(720, 180)
 	pb.add_theme_font_size_override("font_size", 90)
@@ -2829,6 +3008,7 @@ func _build_ui() -> void:
 	badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	mv.add_child(badge)
 	_label("Zorla reklam yok", 38, badge)
+	_label("v" + GAME_VER, 30, mv, Color(1, 1, 1, 0.75))
 	_build_loadout(cl)
 	_build_daily(cl)
 	_build_map(cl)
@@ -2852,7 +3032,7 @@ func _build_ui() -> void:
 	res_info.add_theme_constant_override("outline_size", 14)
 	res_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# metin alani bastan ayrilir: yazi animasyonu sirasinda butonlar kaymaz
-	res_info.custom_minimum_size = Vector2(1000, 500)
+	res_info.custom_minimum_size = Vector2(880, 260)
 	res_info.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	var rgap := Control.new()   # v8.9: coin dokumu Sonraki butonuna yapismasin
 	rgap.custom_minimum_size = Vector2(0, 24)
@@ -2881,6 +3061,7 @@ func _build_ui() -> void:
 	load_card.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	load_card.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	load_card.visible = false
+	_apply_metrics()
 	_refresh_menu()
 
 func _chip(parent: Node, col: Color, kind: String) -> Label:
@@ -2930,7 +3111,7 @@ func _build_sec_bars(n: int) -> void:
 	for c in sec_box.get_children():
 		c.queue_free()
 	sec_bars.clear()
-	var w := 760 / n - 14
+	var w := mini(760, int(_safe_view().x) - 96) / n - 14
 	for i in n:
 		var pb := ProgressBar.new()
 		pb.custom_minimum_size = Vector2(w, 40 if i < n - 1 else 52)
@@ -2956,7 +3137,7 @@ func _build_loadout(cl: Node) -> void:
 	for k in 3:
 		var kk := k
 		var b := _btn("", Color(0.15, 0.4, 0.8), row, func() -> void: _cycle_slot(kk))
-		b.custom_minimum_size = Vector2(300, 200)
+		b.custom_minimum_size = _slot_size()
 		slot_btns.append(b)
 	card_rows = VBoxContainer.new()
 	card_rows.add_theme_constant_override("separation", 14)
@@ -2966,7 +3147,7 @@ func _build_loadout(cl: Node) -> void:
 	loadout.visible = false
 
 func _card_desc(ty: int) -> String:
-	return ["Kılıç + kalkan, dengeli", "Uzaktan ok atar, kırılgan", "Yavaş, dayanıklı, kaleye çok vurur", "Temasta alan patlaması"][ty]
+	return ["Kılıç ve kalkan", "Uzaktan ok", "Yavaş, kale kırar", "Alan patlaması"][ty]
 
 func _show_loadout(i: int) -> void:
 	lo_level = i
@@ -2993,10 +3174,11 @@ func _refresh_loadout() -> void:
 	for k in 3:
 		var b: Button = slot_btns[k]
 		var ty: int = slots[k]
+		b.custom_minimum_size = _slot_size()
 		b.text = "%d. %s\nSv.%d" % [k + 1, CARD_NAMES[ty], int(card_lv[ty]) + 1]
 		b.add_theme_stylebox_override("normal", _style(cols[ty]))
 		b.add_theme_stylebox_override("hover", _style(cols[ty].lightened(0.15)))
-		b.add_theme_font_size_override("font_size", 44)
+		_fit_btn_font(b, 40, 26)
 	for c in card_rows.get_children():
 		c.queue_free()
 	var cl := _label("Coin: %d" % coins, 50, card_rows, Color(1, 0.85, 0.2))
@@ -3005,25 +3187,27 @@ func _refresh_loadout() -> void:
 		var h := HBoxContainer.new()
 		h.add_theme_constant_override("separation", 16)
 		card_rows.add_child(h)
-		var l := _label("%s - %s" % [CARD_NAMES[ty], _card_desc(ty)], 40, h)
-		l.custom_minimum_size = Vector2(540, 0)
+		var l := _label("%s\n%s" % [CARD_NAMES[ty], _card_desc(ty)], 34, h)
+		var lw := minf(480.0, _wrap_w() - 280.0)
+		l.custom_minimum_size = Vector2(lw, 0)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.autowrap_mode = TextServer.AUTOWRAP_OFF
 		var tyy := ty
 		var b: Button
 		if not owned[ty]:
 			if unlocked < CARD_REQ[ty]:
-				b = _btn("Bölüm %d sonrası" % (CARD_REQ[ty] - 1), Color(0.3, 0.3, 0.38), h, func() -> void: pass)
+				b = _btn("Bl. %d sonra" % (CARD_REQ[ty] - 1), Color(0.3, 0.3, 0.38), h, func() -> void: pass)
 				b.disabled = true
 			else:
 				b = _btn("Aç: %d" % CARD_COST[ty], Color(0.9, 0.6, 0.1), h, func() -> void: _buy_card(tyy))
 				b.disabled = coins < CARD_COST[ty]
 		else:
 			var cost := 80 * (int(card_lv[ty]) + 1)
-			b = _btn("Sv.%d: %d coin" % [int(card_lv[ty]) + 2, cost] if card_lv[ty] < 5 else "MAKS", Color(0.55, 0.2, 0.9), h, func() -> void: _up_card(tyy))
+			b = _btn("Sv.%d: %d" % [int(card_lv[ty]) + 2, cost] if card_lv[ty] < 5 else "MAKS", Color(0.55, 0.2, 0.9), h, func() -> void: _up_card(tyy))
 			b.disabled = coins < cost or card_lv[ty] >= 5
-		b.custom_minimum_size = Vector2(340, 100)
-		b.add_theme_font_size_override("font_size", 44 if b.text.length() <= 12 else 38)
+		var bw := minf(280.0, maxf(180.0, _wrap_w() - lw - 36.0))
+		b.custom_minimum_size = Vector2(bw, 96)
+		_fit_btn_font(b, 36, 26)
 
 func _buy_card(ty: int) -> void:
 	if coins >= CARD_COST[ty] and not owned[ty]:
@@ -3048,10 +3232,12 @@ func _build_daily(cl: Node) -> void:
 	var v := _panel(cl)
 	dailyp = v.get_parent().get_parent()
 	v.add_theme_constant_override("separation", 24)
-	_label("GÜNLÜK MEYDAN OKUMA", 80, v, Color(1, 0.75, 0.2))
-	daily_info = _label("", 40, v)
+	daily_title = _label("GÜNLÜK MEYDAN OKUMA", 64, v, Color(1, 0.75, 0.2))
+	daily_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	daily_title.custom_minimum_size = Vector2(880, 0)
+	daily_info = _label("", 36, v)
 	daily_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	daily_info.custom_minimum_size = Vector2(900, 0)
+	daily_info.custom_minimum_size = Vector2(880, 0)
 	nick_edit = LineEdit.new()
 	nick_edit.placeholder_text = "Takma ad (2-16 harf)"
 	nick_edit.max_length = 16
@@ -3062,15 +3248,22 @@ func _build_daily(cl: Node) -> void:
 		nickname = tx.strip_edges()
 		_save())
 	v.add_child(nick_edit)
+	daily_scroll = ScrollContainer.new()
+	daily_scroll.custom_minimum_size = Vector2(880, 420)
+	daily_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	daily_scroll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(daily_scroll)
 	var pc := PanelContainer.new()
 	var sb := StyleBoxFlat.new(); sb.bg_color = Color(0.08, 0.1, 0.25, 0.85); sb.set_corner_radius_all(30)
-	sb.content_margin_left = 30; sb.content_margin_right = 30; sb.content_margin_top = 20; sb.content_margin_bottom = 20
+	sb.content_margin_left = 24; sb.content_margin_right = 24; sb.content_margin_top = 16; sb.content_margin_bottom = 16
 	pc.add_theme_stylebox_override("panel", sb)
-	pc.custom_minimum_size = Vector2(900, 700)
-	v.add_child(pc)
+	pc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	daily_scroll.add_child(pc)
 	daily_list = Label.new()
-	daily_list.add_theme_font_size_override("font_size", 36)
+	daily_list.add_theme_font_size_override("font_size", 34)
 	daily_list.add_theme_font_override("font", bold)
+	daily_list.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	daily_list.custom_minimum_size = Vector2(820, 0)
 	pc.add_child(daily_list)
 	_btn("OYNA", Color(0.1, 0.7, 0.45), v, func() -> void: _fade(start_daily, "Günlük Meydan Okuma"))
 	_btn("Geri", Color(0.3, 0.3, 0.5), v, _show_menu).custom_minimum_size = Vector2(720, 90)
@@ -3092,7 +3285,7 @@ func _show_daily() -> void:
 	dailyp.visible = true
 	nick_edit.text = nickname
 	var best: int = daily_best.get(daily_day, 0)
-	daily_info.text = "%s · Herkese aynı bölüm. Kaleyi EN AZ atışla yık!\nKartlar sabit: Savaşçı, Okçu, Savaşçı.  Senin en iyin: %s" % [daily_day, str(best) if best > 0 else "-"]
+	daily_info.text = "%s\nAynı bölüm. En az atış kazanır.\nKartlar: Savaşçı · Okçu · Savaşçı\nEn iyin: %s" % [daily_day, str(best) if best > 0 else "-"]
 	daily_list.text = "Türkiye sıralaması yükleniyor..."
 	_fetch_lb()
 
@@ -3108,11 +3301,11 @@ func _on_lb(_r: int, code: int, _h: PackedStringArray, body: PackedByteArray) ->
 	if typeof(data) != TYPE_ARRAY or data.size() == 0:
 		daily_list.text = "TÜRKİYE SIRALAMASI (bugün)\n\nHenüz skor yok — ilk sen ol!"
 		return
-	var lines := ["TÜRKİYE SIRALAMASI (bugün)  — az atış = iyi", ""]
+	var lines := ["TÜRKİYE · bugün", "Az atış daha iyi", ""]
 	var i := 1
 	for row in data:
 		if i > 12: break
-		lines.append("%2d. %-16s %4d atış" % [i, str(row["nick"]), int(row["score"])])
+		lines.append("%d.  %s   ·   %d atış" % [i, str(row["nick"]), int(row["score"])])
 		i += 1
 	daily_list.text = "\n".join(lines)
 
@@ -3137,7 +3330,9 @@ func _refresh_menu() -> void:
 		b.disabled = i >= unlocked
 		b.text = ("Bölüm %d" % (i + 1)) if i < unlocked else ("Bölüm %d  (kilitli)" % (i + 1))
 	var cost := _up_cost()
-	up_btn.text = "Atış Hızı Sv.%d: %d coin" % [rate_lv + 1, cost]
+	up_btn.text = "Atış Sv.%d: %d coin" % [rate_lv + 1, cost]
+	up_btn.add_theme_font_size_override("font_size", 40)
+	_fit_btn_font(up_btn, 40, 28)
 	up_btn.disabled = coins < cost or rate_lv >= 10
 
 func _up_cost() -> int:
@@ -3493,6 +3688,13 @@ func _punch(a: float) -> void:
 	var tw := create_tween().set_ignore_time_scale(true)
 	tw.tween_property(cam, "fov", 64.0, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
+func _kick(a: float, cap := 1.0) -> void:
+	trauma = minf(cap, trauma + a)
+
+func _splash(col: Color, a: float) -> void:
+	if fx_flash == null or menu_mode or not hud or not hud.visible: return
+	fx_flash.color = Color(col.r, col.g, col.b, clampf(a, 0.0, 0.45))
+
 func _vib(ms: int) -> void:
 	if opt["vib"] and (OS.has_feature("android") or OS.has_feature("web_android")):
 		Input.vibrate_handheld(ms)
@@ -3730,6 +3932,7 @@ func _build_settings(cl: Node) -> void:
 	_label("AYARLAR", 100, v, CYAN)
 	for k in ["sfx", "music", "vib", "shadows"]:
 		set_btns[k] = _btn("", Color(0.2, 0.45, 0.8), v, _toggle_opt.bind(k))
+	set_btns["ads"] = _btn("Reklam izni", Color(0.45, 0.35, 0.15), v, func() -> void: Ads.open_consent())
 	_btn("Geri", Color(0.3, 0.3, 0.5), v, func() -> void:
 		_mark_screen()
 		settingsp.visible = false
@@ -3746,9 +3949,16 @@ func _refresh_settings() -> void:
 	var names := {"sfx": "Ses efektleri", "music": "Müzik", "vib": "Titreşim", "shadows": "Gölge & yüksek kalite"}
 	for k in set_btns:
 		var b: Button = set_btns[k]
+		if k == "ads":
+			b.text = Ads.consent_label()
+			_fit_btn_font(b, 44, 30)
+			b.add_theme_stylebox_override("normal", _style(Color(0.45, 0.35, 0.15)))
+			b.add_theme_stylebox_override("hover", _style(Color(0.55, 0.42, 0.18)))
+			continue
 		var on: bool = opt[k]
 		b.text = "%s: %s" % [names[k], "AÇIK" if on else "KAPALI"]
-		if k == "shadows": b.add_theme_font_size_override("font_size", 44)  # 720px butona sigsin
+		if k == "shadows": b.text = "Gölge: %s" % ("AÇIK" if on else "KAPALI")
+		_fit_btn_font(b, 48 if k != "shadows" else 42, 30)
 		var c := Color(0.12, 0.65, 0.4) if on else Color(0.35, 0.35, 0.45)
 		b.add_theme_stylebox_override("normal", _style(c))
 		b.add_theme_stylebox_override("hover", _style(c.lightened(0.15)))
@@ -3799,6 +4009,91 @@ func _find_btn(root: Node, prefix: String) -> Button:
 
 func _wait(s: float) -> void:
 	await get_tree().create_timer(s, true, false, true).timeout
+
+func _ui_frames() -> void:
+	for i in 5:
+		await get_tree().process_frame
+
+func _ui_scan(tag: String) -> int:
+	var vr := _safe_rect()
+	var fails := 0
+	var stack: Array = [self]
+	while stack.size() > 0:
+		var n: Node = stack.pop_back()
+		for ch in n.get_children():
+			stack.append(ch)
+		if n is not Control: continue
+		var c := n as Control
+		if not c.is_visible_in_tree() or c.modulate.a < 0.04: continue
+		var interesting := c is Button or c is Label or c is LineEdit or c is ProgressBar or c is PanelContainer
+		if not interesting: continue
+		var r := c.get_global_rect()
+		if r.size.x < 6.0 or r.size.y < 6.0: continue
+		if r.size.x >= vr.size.x - 8.0 and r.size.y >= vr.size.y - 8.0: continue
+		var pad := 8.0
+		var outside := r.position.x < vr.position.x - pad or r.position.y < vr.position.y - pad or r.end.x > vr.end.x + pad or r.end.y > vr.end.y + pad
+		var tx := ""
+		if c is Button: tx = (c as Button).text
+		elif c is Label: tx = (c as Label).text
+		elif c is LineEdit: tx = (c as LineEdit).text
+		if outside:
+			fails += 1
+			print("UIOVER %s %s '%s' rect=%s view=%s" % [tag, c.get_class(), tx.replace("\n", " | ").substr(0, 60), r, vr.size])
+	return fails
+
+func _uicheck(shot_dir: String) -> void:
+	var force := OS.get_environment("UI_RES")
+	if force != "":
+		var p := force.split("x")
+		DisplayServer.window_set_size(Vector2i(int(p[0]), int(p[1])))
+		await _ui_frames()
+	hint_seen = true
+	coins = 420
+	unlocked = 4
+	owned = [true, true, false, false]
+	card_lv = [0, 0, 0, 0]
+	slots = [0, 0, 1]
+	nickname = "aytekin"
+	var fails := 0
+	_enter_menu()
+	await _ui_frames()
+	fails += _ui_scan("menu")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/menu.png")
+	_show_settings()
+	await _ui_frames()
+	fails += _ui_scan("settings")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/settings.png")
+	settingsp.visible = false
+	_show_map()
+	await _ui_frames()
+	fails += _ui_scan("map")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/map.png")
+	_show_loadout(2)
+	await _ui_frames()
+	fails += _ui_scan("loadout")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/loadout.png")
+	_show_daily()
+	await _ui_frames()
+	fails += _ui_scan("daily")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/daily.png")
+	start_level(0)
+	await _ui_frames()
+	fails += _ui_scan("hud")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/hud.png")
+	ammo = 80
+	time_left = 90.0
+	await _win()
+	await _ui_frames()
+	fails += _ui_scan("win")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/win.png")
+	start_level(1)
+	await _ui_frames()
+	_lose("Mermi ve ordu bitti!\nDüşman öldür: +mermi.\nSana ulaşan düşman: −3.")
+	await _ui_frames()
+	fails += _ui_scan("lose")
+	if shot_dir != "": get_viewport().get_texture().get_image().save_png(shot_dir + "/lose.png")
+	print("UICHECK fails=%d view=%s safe=%s window=%s" % [fails, get_viewport().get_visible_rect().size, _safe_view(), get_window().size])
+	get_tree().quit(1 if fails > 0 else 0)
 
 func _flowtest(shot: String) -> void:
 	var ads := [0]

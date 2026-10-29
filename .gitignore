@@ -1,3 +1,6 @@
 .godot/
 build/
 *.import
+*.keystore
+*.jks
+*.aab
