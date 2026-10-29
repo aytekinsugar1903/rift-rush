@@ -4,6 +4,7 @@ Godot 4.7.1, v0.9.1 (versionCode 19), portrait 1080x1920. Web demo: https://rift
 
 - Web: godot --headless --export-release Web build/web/index.html, sonra deploy/ (wasm gzip + worker)
 - APK: --export-debug Android build/riftrush-debug.apk
+- Play AAB: `./tools/export_aab.sh` (upload keystore only from `GODOT_ANDROID_KEYSTORE_RELEASE_*` or CI secrets; see RELEASE-CHECKLIST.md). Preset "Android Release", AAB, targetSdk 36, versionCode 19.
 - Bench: xvfb-run godot --path . -- bench 16 out.png
 - Reklamlar: ads.gd (stub)
 - Test modlari (hicbiri skor gondermez): clickcheck (tum ekran gecislerinde ilk tik; 3 desen: hareket+bas, isinlan+ayni karede bas, hareketsiz bas; oyun tutmasi birakmasi), holdsteer (bas-tut nisan, fare+dokunma), AP_FPS=4 (dusuk FPS yavas cihaz), autoplay N (AP_MODE=smart|casual|human|weak|hold, AP_TS; human/weak botu AP_HB ile ayarlanir; AP_LOSS=1|2 gercek yardim yolunu dener), inputcheck, helpcheck, settingsshot, holdcheck mouse|space, steercheck, uitiming (AP_HELP=1.3 yardimli mermi denemesi), flowtest, bench, hintshot/winshot/popshot
