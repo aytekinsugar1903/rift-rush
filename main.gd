@@ -211,6 +211,7 @@ var card_lv := [0, 0, 0, 0]
 var slots := [0, 0, 0]
 var levels_since_ad := 0
 var nickname := ""
+var device_id := ""   # skor tablosunda takma adin sahibi (rastgele, cihaza ozel)
 var daily_best: Dictionary = {}
 var type_mm: Array = []
 var type_buf: Array = []
@@ -3080,7 +3081,10 @@ func _build_daily(cl: Node) -> void:
 	lb_http.request_completed.connect(_on_lb)
 	post_http = HTTPRequest.new()
 	add_child(post_http)
-	post_http.request_completed.connect(func(_r: int, _c: int, _h: PackedStringArray, _b: PackedByteArray) -> void: _fetch_lb())
+	post_http.request_completed.connect(func(_r: int, code: int, _h: PackedStringArray, _b: PackedByteArray) -> void:
+		if code == 409 and daily_info:
+			daily_info.text = "Bu takma ad başka bir oyuncuya ait. Lütfen farklı bir ad seç."
+		_fetch_lb())
 
 func _show_daily() -> void:
 	daily_day = _today()
@@ -3119,7 +3123,12 @@ func _on_lb(_r: int, code: int, _h: PackedStringArray, body: PackedByteArray) ->
 func _post_score(score: int) -> void:
 	if test_run or nickname.length() < 2: return
 	posts_sent += 1
-	var body := JSON.stringify({"day": daily_day, "nick": nickname, "score": score})
+	if device_id.length() != 32:
+		var cr := Crypto.new()
+		device_id = cr.generate_random_bytes(16).hex_encode()
+		_save()
+	var dur: float = float(cur_L.get("time", 120.0)) - time_left
+	var body := JSON.stringify({"day": daily_day, "nick": nickname, "score": score, "owner": device_id, "dur": snappedf(dur, 0.1)})
 	post_http.cancel_request()
 	post_http.request(API + "/score", ["Content-Type: application/json"], HTTPClient.METHOD_POST, body)
 
@@ -3162,6 +3171,7 @@ func _save() -> void:
 	c.set_value("p", "slots", slots)
 	c.set_value("p", "ads_n", levels_since_ad)
 	c.set_value("p", "nick", nickname)
+	c.set_value("p", "device_id", device_id)
 	c.set_value("p", "daily_best", daily_best)
 	c.set_value("p", "opt", opt)
 	c.set_value("p", "stars", stars_best)
@@ -3179,6 +3189,7 @@ func _load() -> void:
 		slots = c.get_value("p", "slots", slots)
 		levels_since_ad = c.get_value("p", "ads_n", 0)
 		nickname = c.get_value("p", "nick", "")
+		device_id = c.get_value("p", "device_id", "")
 		daily_best = c.get_value("p", "daily_best", {})
 		opt = c.get_value("p", "opt", opt)
 		stars_best = c.get_value("p", "stars", {})

@@ -9,3 +9,9 @@ Godot 4.7.1, portrait 1080x1920. Web demo: https://riftrush-demo.aytekinsugar190
 - Test modlari (hicbiri skor gondermez): clickcheck (tum ekran gecislerinde ilk tik; 3 desen: hareket+bas, isinlan+ayni karede bas, hareketsiz bas; oyun tutmasi birakmasi), holdsteer (bas-tut nisan, fare+dokunma), AP_FPS=4 (dusuk FPS yavas cihaz), autoplay N (AP_MODE=smart|casual|human|weak|hold, AP_TS; human/weak botu AP_HB ile ayarlanir; AP_LOSS=1|2 gercek yardim yolunu dener), inputcheck, helpcheck, settingsshot, holdcheck mouse|space, steercheck, uitiming (AP_HELP=1.3 yardimli mermi denemesi), flowtest, bench, hintshot/winshot/popshot
 - Zorluk denemesi (insana kalibre): AP_LOADOUT=start ./tools_trials.sh human 1 40 4  (hedef kayip yardimsiz: L1 ~%5-8, L2 ~%30, L3 ~%40)
 - Zayif insan (yarim isabet, gec tepki): AP_LOSS=2 AP_LOADOUT=start ./tools_trials.sh weak 1 48 8 (hedef: L2 <%35 yardimsiz / <%5 +%30 yardimla, L3 <%45 / <%10)
+
+## Skor tablosu koruması (skor-tablosu-koruma dalı)
+- Takma adı ilk gönderen cihaz sahiplenir; başka cihaz aynı adla skor gönderemez (409). Sunucu cihaz kimliğinin yalnızca özetini saklar.
+- 5 saniyeden kısa veya bölüm süresini aşan koşular reddedilir.
+- Yayına alma sırası: `npx wrangler d1 execute <DB> --remote --file deploy/schema.sql` (yeni `nicks` tablosu) → yeni web derlemesi + worker birlikte deploy. Eski istemci artık skor gönderemez.
+- Sınır: istemci tarafında hesaplanan skor yine sahte gönderilebilir; tam koruma için sunucuda tekrar oynatma (replay) doğrulaması gerekir.
