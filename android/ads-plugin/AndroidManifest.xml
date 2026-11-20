@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.github.aytekinsugar1903.riftrush.ads">
+    <application>
+        <meta-data
+            android:name="org.godotengine.plugin.v2.RiftRushAds"
+            android:value="io.github.aytekinsugar1903.riftrush.ads.RiftRushAdsPlugin" />
+    </application>
+</manifest>

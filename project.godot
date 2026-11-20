@@ -13,6 +13,9 @@ boot_splash/use_filter=true
 [autoload]
 Ads="*res://ads.gd"
 
+[editor_plugins]
+enabled=PackedStringArray("res://addons/riftrush_ads/plugin.cfg")
+
 [display]
 window/size/viewport_width=1080
 window/size/viewport_height=1920

@@ -1,0 +1,4 @@
+-keep class io.github.aytekinsugar1903.riftrush.ads.** { *; }
+-keepclassmembers class * {
+    @org.godotengine.godot.plugin.UsedByGodot <methods>;
+}
